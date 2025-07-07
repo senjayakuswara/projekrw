@@ -3,12 +3,21 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20px" height="20px" {...props}>
@@ -19,11 +28,71 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const loginSchema = z.object({
+  email: z.string().email({ message: "Format email tidak valid." }),
+  password: z.string().min(1, { message: "Password tidak boleh kosong." }),
+});
+
+const registerSchema = z.object({
+  displayName: z.string().min(3, { message: "Nama minimal 3 karakter." }),
+  email: z.string().email({ message: "Format email tidak valid." }),
+  password: z.string().min(6, { message: "Password minimal 6 karakter." }),
+});
+
 
 export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const registerForm = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { displayName: "", email: "", password: "" },
+  });
+
+  const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
+    setError('');
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      router.push('/welcome');
+    } catch (err: any) {
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+        setError('Email atau password salah.');
+      } else {
+        setError('Gagal masuk. Silakan coba lagi.');
+      }
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
+    setError('');
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      await updateProfile(userCredential.user, {
+        displayName: values.displayName
+      });
+      router.push('/welcome');
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Email sudah terdaftar. Silakan masuk.');
+      } else {
+        setError('Gagal mendaftar. Silakan coba lagi.');
+      }
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -32,8 +101,12 @@ export default function LoginPage() {
     try {
         await signInWithPopup(auth, provider);
         router.push('/welcome');
-    } catch (err) {
-        setError('Gagal masuk dengan Google. Pastikan domain Anda telah diizinkan di Firebase Console.');
+    } catch (err: any) {
+        if (err.code === 'auth/unauthorized-domain') {
+          setError('Domain tidak diizinkan. Hubungi admin.');
+        } else {
+          setError('Gagal masuk dengan Google. Silakan coba lagi.');
+        }
         console.error(err);
     } finally {
         setLoading(false);
@@ -44,26 +117,68 @@ export default function LoginPage() {
     <main className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-sm mx-auto shadow-xl border-0 sm:border">
         <CardHeader className="text-center space-y-1">
-          <CardTitle className="text-2xl font-bold tracking-tight text-primary">Login RW CEKATAN</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight text-primary">RW CEKATAN</CardTitle>
           <CardDescription>
-            Gunakan akun Google Anda untuk melanjutkan
+            Aplikasi Manajemen Lingkungan RW
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Masuk</TabsTrigger>
+              <TabsTrigger value="register">Daftar</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login" className="space-y-4">
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4 pt-4">
+                   <FormField control={loginForm.control} name="email" render={({ field }) => (
+                      <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="email@contoh.com" {...field} /></FormControl><FormMessage /></FormItem>
+                   )} />
+                   <FormField control={loginForm.control} name="password" render={({ field }) => (
+                      <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                   )} />
+                   <Button type="submit" className="w-full" disabled={loading}>
+                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Masuk
+                   </Button>
+                </form>
+              </Form>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><Separator /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Atau</span></div>
+              </div>
+              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+                <GoogleIcon className="mr-2" /> Masuk / Daftar dengan Google
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="register">
+               <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4 pt-4">
+                   <FormField control={registerForm.control} name="displayName" render={({ field }) => (
+                      <FormItem><FormLabel>Nama Lengkap</FormLabel><FormControl><Input placeholder="Nama Anda" {...field} /></FormControl><FormMessage /></FormItem>
+                   )} />
+                   <FormField control={registerForm.control} name="email" render={({ field }) => (
+                      <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="email@contoh.com" {...field} /></FormControl><FormMessage /></FormItem>
+                   )} />
+                   <FormField control={registerForm.control} name="password" render={({ field }) => (
+                      <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                   )} />
+                   <Button type="submit" className="w-full" disabled={loading}>
+                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Daftar Akun Baru
+                   </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+          
           {error && (
-            <Alert variant="destructive" className="animate-in fade-in-0 duration-300">
+            <Alert variant="destructive" className="mt-4 animate-in fade-in-0 duration-300">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Login Gagal</AlertTitle>
-              <AlertDescription>
-                {error}
-              </AlertDescription>
+              <AlertTitle>Terjadi Kesalahan</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2" />}
-            Masuk / Daftar dengan Google
-          </Button>
 
         </CardContent>
       </Card>
