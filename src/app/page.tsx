@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -125,13 +126,13 @@ export default function LoginPage() {
           <div className="relative my-6">
             <Separator />
             <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-background px-2 text-xs text-muted-foreground">
-              ATAU
+              Atau lanjutkan dengan
             </span>
           </div>
 
           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
             <GoogleIcon className="mr-2" />
-            Masuk dengan Google
+            Masuk / Daftar dengan Google
           </Button>
 
         </CardContent>
