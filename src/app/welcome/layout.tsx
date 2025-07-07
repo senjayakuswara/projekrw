@@ -8,6 +8,7 @@ import {
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
+  SidebarMenuItem,
   SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
