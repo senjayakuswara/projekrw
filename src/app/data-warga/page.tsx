@@ -198,14 +198,16 @@ export default function DataKeluargaPage() {
                             <AlertDialog>
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                                    <span className="sr-only">Buka menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <Button asChild variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                      <span>
+                                        <span className="sr-only">Buka menu</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </span>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Aksi Keluarga</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={(e) => {e.stopPropagation(); handleKeluargaDialogOpen(keluarga)}}>
+                                    <DropdownMenuItem onClick={() => handleKeluargaDialogOpen(keluarga)}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         <span>Edit Keluarga</span>
                                     </DropdownMenuItem>
