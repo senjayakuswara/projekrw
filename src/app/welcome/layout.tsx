@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Home, LogOut, Newspaper, Users, Wallet } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 export default function DashboardLayout({
@@ -23,6 +23,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = () => {
     router.push('/');
@@ -43,13 +44,13 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => router.push('/welcome')} isActive>
+              <SidebarMenuButton onClick={() => router.push('/welcome')} isActive={pathname === '/welcome'}>
                 <Home />
                 Dashboard
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton>
+              <SidebarMenuButton onClick={() => router.push('/data-warga')} isActive={pathname === '/data-warga'}>
                 <Users />
                 Data Warga
               </SidebarMenuButton>
