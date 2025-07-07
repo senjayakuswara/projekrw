@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, query, where, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button";
@@ -23,12 +23,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // Schemas
-const keluargaSchema = z.object({
-  noKK: z.string().length(16, { message: "No. KK harus 16 digit." }),
-  kepalaKeluarga: z.string().min(1, { message: "Nama Kepala Keluarga tidak boleh kosong." }),
-  alamat: z.string().min(1, { message: "Alamat tidak boleh kosong." }),
-});
-
 const anggotaSchema = z.object({
   nama: z.string().min(1, { message: "Nama tidak boleh kosong." }),
   nik: z.string().length(16, { message: "NIK harus 16 digit." }),
@@ -45,9 +39,15 @@ const anggotaSchema = z.object({
   namaIbu: z.string().min(1, "Nama ibu tidak boleh kosong."),
 });
 
+const keluargaSchema = z.object({
+  noKK: z.string().length(16, { message: "No. KK harus 16 digit." }),
+  alamat: z.string().min(1, { message: "Alamat tidak boleh kosong." }),
+}).merge(anggotaSchema);
+
 // Types
 type Anggota = z.infer<typeof anggotaSchema> & { id: string };
-type Keluarga = z.infer<typeof keluargaSchema> & { id: string; anggota?: Anggota[] };
+type Keluarga = { id: string; noKK: string; kepalaKeluarga: string; alamat: string; anggota?: Anggota[] };
+type EditingKeluargaState = { keluarga: Keluarga, kepalaKeluargaData: Anggota } | null;
 
 export default function DataWargaPage() {
   const [keluargaList, setKeluargaList] = useState<Keluarga[]>([]);
@@ -55,7 +55,7 @@ export default function DataWargaPage() {
   const { toast } = useToast();
   
   const [isKeluargaFormOpen, setKeluargaFormOpen] = useState(false);
-  const [editingKeluarga, setEditingKeluarga] = useState<Keluarga | null>(null);
+  const [editingKeluarga, setEditingKeluarga] = useState<EditingKeluargaState>(null);
   
   const [isAnggotaFormOpen, setAnggotaFormOpen] = useState(false);
   const [editingAnggota, setEditingAnggota] = useState<Anggota | null>(null);
@@ -65,7 +65,23 @@ export default function DataWargaPage() {
 
   const keluargaForm = useForm<z.infer<typeof keluargaSchema>>({
     resolver: zodResolver(keluargaSchema),
-    defaultValues: { noKK: "", kepalaKeluarga: "", alamat: "" }
+    defaultValues: {
+      noKK: "",
+      alamat: "",
+      nama: "",
+      nik: "",
+      jenisKelamin: "Laki-laki",
+      tempatLahir: "",
+      tanggalLahir: "",
+      agama: "",
+      pendidikan: "",
+      jenisPekerjaan: "",
+      statusPerkawinan: "Kawin",
+      statusHubungan: "Kepala Keluarga",
+      kewarganegaraan: "WNI",
+      namaAyah: "",
+      namaIbu: "",
+    }
   });
 
   const anggotaForm = useForm<z.infer<typeof anggotaSchema>>({
@@ -124,18 +140,51 @@ export default function DataWargaPage() {
   }, [toast, fetchAnggota]);
   
   const handleKeluargaDialogOpen = (keluarga: Keluarga | null = null) => {
-    setEditingKeluarga(keluarga);
-    keluargaForm.reset(keluarga || { noKK: "", kepalaKeluarga: "", alamat: "" });
+    if (keluarga) {
+      const kepalaKeluargaData = keluarga.anggota?.find(a => a.statusHubungan === "Kepala Keluarga");
+      if (kepalaKeluargaData) {
+        setEditingKeluarga({ keluarga, kepalaKeluargaData });
+        keluargaForm.reset({
+          ...kepalaKeluargaData,
+          noKK: keluarga.noKK,
+          alamat: keluarga.alamat,
+        });
+      } else {
+        toast({ variant: "destructive", title: "Data Tidak Lengkap", description: "Data kepala keluarga tidak ditemukan." });
+        return;
+      }
+    } else {
+      setEditingKeluarga(null);
+      keluargaForm.reset(keluargaForm.formState.defaultValues);
+    }
     setKeluargaFormOpen(true);
   };
 
   const onKeluargaSubmit = async (values: z.infer<typeof keluargaSchema>) => {
+    const { noKK, alamat, nama, ...anggotaValues } = values;
+    const batch = writeBatch(db);
+
     try {
       if (editingKeluarga) {
-        await updateDoc(doc(db, "keluarga", editingKeluarga.id), values);
+        const keluargaRef = doc(db, "keluarga", editingKeluarga.keluarga.id);
+        const kepalaKeluargaRef = doc(db, "keluarga", editingKeluarga.keluarga.id, "anggota", editingKeluarga.kepalaKeluargaData.id);
+        
+        batch.update(keluargaRef, { noKK, alamat, kepalaKeluarga: nama });
+        batch.update(kepalaKeluargaRef, { nama, ...anggotaValues });
+        
+        await batch.commit();
         toast({ title: "Berhasil", description: "Data keluarga berhasil diperbarui." });
       } else {
-        await addDoc(collection(db, "keluarga"), values);
+        const keluargaData = { noKK, alamat, kepalaKeluarga: nama };
+        const anggotaData = { nama, ...anggotaValues, statusHubungan: "Kepala Keluarga" };
+        
+        const newKeluargaRef = doc(collection(db, "keluarga"));
+        const newAnggotaRef = doc(collection(db, "keluarga", newKeluargaRef.id, "anggota"));
+
+        batch.set(newKeluargaRef, keluargaData);
+        batch.set(newAnggotaRef, anggotaData);
+
+        await batch.commit();
         toast({ title: "Berhasil", description: "Keluarga baru berhasil ditambahkan." });
       }
       setKeluargaFormOpen(false);
@@ -187,7 +236,13 @@ export default function DataWargaPage() {
 
   const handleDeleteAnggota = async (keluargaId: string, anggotaId: string) => {
     try {
-      await deleteDoc(doc(db, "keluarga", keluargaId, "anggota", anggotaId));
+      const anggotaRef = doc(db, "keluarga", keluargaId, "anggota", anggotaId);
+      const anggotaSnap = await getDoc(anggotaRef);
+      if (anggotaSnap.exists() && anggotaSnap.data().statusHubungan === 'Kepala Keluarga') {
+        toast({ variant: "destructive", title: "Aksi Ditolak", description: "Tidak dapat menghapus kepala keluarga. Hapus data keluarga untuk melanjutkan." });
+        return;
+      }
+      await deleteDoc(anggotaRef);
       toast({ title: "Berhasil", description: "Data anggota keluarga berhasil dihapus." });
     } catch (error) {
       console.error("Error deleting anggota: ", error);
@@ -312,13 +367,13 @@ export default function DataWargaPage() {
                                                     <TableRow key={anggota.id} className="bg-white">
                                                         <TableCell>{anggota.nama}</TableCell>
                                                         <TableCell>{anggota.nik}</TableCell>
-                                                        <TableCell><Badge variant="outline">{anggota.statusHubungan}</Badge></TableCell>
+                                                        <TableCell><Badge variant={anggota.statusHubungan === 'Kepala Keluarga' ? 'default' : 'outline'}>{anggota.statusHubungan}</Badge></TableCell>
                                                         <TableCell>{anggota.jenisKelamin}</TableCell>
                                                         <TableCell className="text-right">
                                                             <AlertDialog>
                                                                 <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                    <Button variant="ghost" className="h-8 w-8 p-0" disabled={anggota.statusHubungan === 'Kepala Keluarga'}>
                                                                     <MoreHorizontal className="h-4 w-4" />
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
@@ -380,35 +435,70 @@ export default function DataWargaPage() {
       
       {/* Dialog for Keluarga Form */}
       <Dialog open={isKeluargaFormOpen} onOpenChange={setKeluargaFormOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editingKeluarga ? "Edit Data Keluarga" : "Tambah Keluarga Baru"}</DialogTitle>
-            <DialogDescription>Lengkapi data utama keluarga di bawah ini.</DialogDescription>
+            <DialogDescription>Lengkapi data utama keluarga dan data kepala keluarga di bawah ini.</DialogDescription>
           </DialogHeader>
           <Form {...keluargaForm}>
-            <form onSubmit={keluargaForm.handleSubmit(onKeluargaSubmit)} className="space-y-4 py-4">
-                <FormField control={keluargaForm.control} name="noKK" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Nomor Kartu Keluarga (KK)</FormLabel>
-                        <FormControl><Input placeholder="16 digit nomor KK" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={keluargaForm.control} name="kepalaKeluarga" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Nama Kepala Keluarga</FormLabel>
-                        <FormControl><Input placeholder="Contoh: Budi Santoso" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={keluargaForm.control} name="alamat" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Alamat</FormLabel>
-                        <FormControl><Input placeholder="Contoh: Blok A No. 1" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <DialogFooter>
+            <form onSubmit={keluargaForm.handleSubmit(onKeluargaSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-2">
+                <div className="space-y-2 p-4 border rounded-lg">
+                    <h3 className="font-medium text-lg">Data Keluarga</h3>
+                    <FormField control={keluargaForm.control} name="noKK" render={({ field }) => (
+                        <FormItem><FormLabel>Nomor Kartu Keluarga (KK)</FormLabel><FormControl><Input placeholder="16 digit nomor KK" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="alamat" render={({ field }) => (
+                        <FormItem><FormLabel>Alamat</FormLabel><FormControl><Input placeholder="Contoh: Blok A No. 1" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                </div>
+
+                <div className="space-y-2 p-4 border rounded-lg">
+                    <h3 className="font-medium text-lg">Data Kepala Keluarga</h3>
+                     <FormField control={keluargaForm.control} name="nama" render={({ field }) => (
+                        <FormItem><FormLabel>Nama Lengkap</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="nik" render={({ field }) => (
+                        <FormItem><FormLabel>NIK</FormLabel><FormControl><Input placeholder="16 digit NIK" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="jenisKelamin" render={({ field }) => (
+                        <FormItem><FormLabel>Jenis Kelamin</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Laki-laki">Laki-laki</SelectItem><SelectItem value="Perempuan">Perempuan</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                    )} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField control={keluargaForm.control} name="tempatLahir" render={({ field }) => (
+                            <FormItem><FormLabel>Tempat Lahir</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={keluargaForm.control} name="tanggalLahir" render={({ field }) => (
+                        <FormItem><FormLabel>Tanggal Lahir</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    </div>
+                    <FormField control={keluargaForm.control} name="agama" render={({ field }) => (
+                        <FormItem><FormLabel>Agama</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="pendidikan" render={({ field }) => (
+                        <FormItem><FormLabel>Pendidikan Terakhir</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="jenisPekerjaan" render={({ field }) => (
+                        <FormItem><FormLabel>Jenis Pekerjaan</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="statusPerkawinan" render={({ field }) => (
+                        <FormItem><FormLabel>Status Perkawinan</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Belum Kawin">Belum Kawin</SelectItem><SelectItem value="Kawin">Kawin</SelectItem><SelectItem value="Cerai Hidup">Cerai Hidup</SelectItem><SelectItem value="Cerai Mati">Cerai Mati</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="statusHubungan" render={({ field }) => (
+                        <FormItem><FormLabel>Status Hubungan Keluarga</FormLabel><FormControl><Input {...field} readOnly className="bg-gray-100" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={keluargaForm.control} name="kewarganegaraan" render={({ field }) => (
+                        <FormItem><FormLabel>Kewarganegaraan</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField control={keluargaForm.control} name="namaAyah" render={({ field }) => (
+                            <FormItem><FormLabel>Nama Ayah</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={keluargaForm.control} name="namaIbu" render={({ field }) => (
+                            <FormItem><FormLabel>Nama Ibu</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    </div>
+                </div>
+                <DialogFooter className="pt-4 sticky bottom-0 bg-background">
                     <DialogClose asChild><Button type="button" variant="outline">Batal</Button></DialogClose>
                     <Button type="submit" disabled={keluargaForm.formState.isSubmitting}>
                         {keluargaForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan
@@ -458,7 +548,7 @@ export default function DataWargaPage() {
                     <FormItem><FormLabel>Status Perkawinan</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Belum Kawin">Belum Kawin</SelectItem><SelectItem value="Kawin">Kawin</SelectItem><SelectItem value="Cerai Hidup">Cerai Hidup</SelectItem><SelectItem value="Cerai Mati">Cerai Mati</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                 )} />
                  <FormField control={anggotaForm.control} name="statusHubungan" render={({ field }) => (
-                    <FormItem><FormLabel>Status Hubungan Keluarga</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Kepala Keluarga">Kepala Keluarga</SelectItem><SelectItem value="Istri">Istri</SelectItem><SelectItem value="Anak">Anak</SelectItem><SelectItem value="Famili Lain">Famili Lain</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Status Hubungan Keluarga</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Istri">Istri</SelectItem><SelectItem value="Anak">Anak</SelectItem><SelectItem value="Famili Lain">Famili Lain</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                 )} />
                 <FormField control={anggotaForm.control} name="kewarganegaraan" render={({ field }) => (
                     <FormItem><FormLabel>Kewarganegaraan</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -471,7 +561,7 @@ export default function DataWargaPage() {
                         <FormItem><FormLabel>Nama Ibu</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
-                <DialogFooter className="pt-4">
+                <DialogFooter className="pt-4 sticky bottom-0 bg-background">
                     <DialogClose asChild><Button type="button" variant="outline">Batal</Button></DialogClose>
                     <Button type="submit" disabled={anggotaForm.formState.isSubmitting}>
                         {anggotaForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan
