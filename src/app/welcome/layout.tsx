@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -35,7 +34,7 @@ export default function DashboardLayout({
         <Sidebar>
             <SidebarHeader className="p-4">
                 <div className="flex items-center gap-2">
-                    <Image src="https://placehold.co/40x40.png" alt="Logo RW" width={40} height={40} className="rounded-full" data-ai-hint="logo building" />
+                    <Image src="/icons/icon-192x192.png" alt="Logo RW" width={40} height={40} className="rounded-full" />
                     <div className="flex flex-col">
                         <h2 className="text-lg font-semibold">RW CEKATAN</h2>
                         <p className="text-sm text-muted-foreground">Desa Naringgul</p>
@@ -80,7 +79,10 @@ export default function DashboardLayout({
       </div>
       <SidebarInset>
         <header className="flex h-14 items-center justify-center bg-black/75 px-4 md:justify-end">
-            <h1 className="text-lg font-bold text-white md:hidden">RW CEKATAN</h1>
+            <div className="flex items-center gap-3 md:hidden">
+              <Image src="/icons/icon-192x192.png" alt="Logo RW" width={32} height={32} className="rounded-md" />
+              <h1 className="text-lg font-bold text-white">RW CEKATAN</h1>
+            </div>
             <p className="hidden font-semibold text-sm text-white md:block">adminrw@naringgul.com</p>
         </header>
         <main className="flex-1 overflow-y-auto bg-slate-50 p-4 pb-24 md:p-6 lg:p-8">
