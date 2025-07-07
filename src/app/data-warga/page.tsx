@@ -47,7 +47,7 @@ const keluargaSchema = z.object({
 // Types
 type Anggota = z.infer<typeof anggotaSchema> & { id: string };
 type Keluarga = { id: string; noKK: string; kepalaKeluarga: string; alamat: string; anggota?: Anggota[] };
-type EditingKeluargaState = { keluarga: Keluarga, kepalaKeluargaData: Anggota } | null;
+type EditingKeluargaState = { keluarga: Keluarga, kepalaKeluargaData: Anggota | null } | null;
 
 export default function DataWargaPage() {
   const [keluargaList, setKeluargaList] = useState<Keluarga[]>([]);
@@ -142,16 +142,22 @@ export default function DataWargaPage() {
   const handleKeluargaDialogOpen = (keluarga: Keluarga | null = null) => {
     if (keluarga) {
       const kepalaKeluargaData = keluarga.anggota?.find(a => a.statusHubungan === "Kepala Keluarga");
+      setEditingKeluarga({ keluarga, kepalaKeluargaData: kepalaKeluargaData || null });
       if (kepalaKeluargaData) {
-        setEditingKeluarga({ keluarga, kepalaKeluargaData });
         keluargaForm.reset({
           ...kepalaKeluargaData,
           noKK: keluarga.noKK,
           alamat: keluarga.alamat,
         });
       } else {
-        toast({ variant: "destructive", title: "Data Tidak Lengkap", description: "Data kepala keluarga tidak ditemukan." });
-        return;
+        // Handle old data: pre-fill what we have and let the user complete it
+        keluargaForm.reset({
+          ...(keluargaForm.formState.defaultValues || {}),
+          noKK: keluarga.noKK,
+          alamat: keluarga.alamat,
+          nama: keluarga.kepalaKeluarga,
+          statusHubungan: "Kepala Keluarga",
+        });
       }
     } else {
       setEditingKeluarga(null);
@@ -167,10 +173,18 @@ export default function DataWargaPage() {
     try {
       if (editingKeluarga) {
         const keluargaRef = doc(db, "keluarga", editingKeluarga.keluarga.id);
-        const kepalaKeluargaRef = doc(db, "keluarga", editingKeluarga.keluarga.id, "anggota", editingKeluarga.kepalaKeluargaData.id);
-        
         batch.update(keluargaRef, { noKK, alamat, kepalaKeluarga: nama });
-        batch.update(kepalaKeluargaRef, { nama, ...anggotaValues });
+
+        if (editingKeluarga.kepalaKeluargaData?.id) {
+          // If head of family member data exists, update it
+          const kepalaKeluargaRef = doc(db, "keluarga", editingKeluarga.keluarga.id, "anggota", editingKeluarga.kepalaKeluargaData.id);
+          batch.update(kepalaKeluargaRef, { nama, ...anggotaValues });
+        } else {
+          // If it doesn't exist, create it (upgrading old data)
+          const anggotaData = { nama, ...anggotaValues, statusHubungan: "Kepala Keluarga" };
+          const newAnggotaRef = doc(collection(db, "keluarga", editingKeluarga.keluarga.id, "anggota"));
+          batch.set(newAnggotaRef, anggotaData);
+        }
         
         await batch.commit();
         toast({ title: "Berhasil", description: "Data keluarga berhasil diperbarui." });
