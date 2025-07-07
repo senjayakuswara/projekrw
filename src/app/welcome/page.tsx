@@ -4,9 +4,18 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, Wallet, Newspaper, UserCog, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function WelcomePage() {
   const router = useRouter();
+  const [username, setUsername] = useState('Admin');
+
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('rw_cekatan_username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
 
   const handleLogout = () => {
     router.push('/');
@@ -53,7 +62,7 @@ export default function WelcomePage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Selamat Datang</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Selamat Datang, {username}</h1>
         <p className="text-muted-foreground">Gunakan menu di bawah untuk mengelola aplikasi RW CEKATAN.</p>
       </div>
 

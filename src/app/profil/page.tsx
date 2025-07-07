@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,17 @@ export default function ProfilPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('rw_cekatan_username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Logic to change password only if new password fields are filled
     if (newPassword) {
       if (newPassword !== confirmPassword) {
         toast({
@@ -44,7 +50,6 @@ export default function ProfilPage() {
           return;
       }
       
-      // Simulate checking old password
       if (oldPassword !== 'adminrw123456') {
           toast({
               variant: "destructive",
@@ -56,8 +61,8 @@ export default function ProfilPage() {
       }
     }
 
-    // Simulation of saving data
     setTimeout(() => {
+        localStorage.setItem('rw_cekatan_username', username);
         toast({
             title: "Berhasil",
             description: "Profil berhasil diperbarui. (Simulasi)",
@@ -65,7 +70,6 @@ export default function ProfilPage() {
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
-        // In a real app, you would also save the new username
         setIsLoading(false);
     }, 1000);
   };
