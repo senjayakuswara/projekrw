@@ -628,9 +628,9 @@ export default function DataWargaPage() {
                                                       { label: "Nama Ayah", value: anggota.namaAyah },
                                                       { label: "Nama Ibu", value: anggota.namaIbu },
                                                     ].map((item, index) => (
-                                                      <div key={index} className="flex justify-between items-start gap-4">
+                                                      <div key={index} className="grid grid-cols-[auto_1fr] items-start gap-x-4">
                                                         <span className="text-muted-foreground">{item.label}</span>
-                                                        <span className="font-medium text-right text-foreground">{item.value || '-'}</span>
+                                                        <span className="font-medium text-right text-foreground break-words">{item.value || '-'}</span>
                                                       </div>
                                                     ))}
                                                   </div>
