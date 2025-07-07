@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, ChevronRight } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Plus, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -306,8 +306,8 @@ export default function DataWargaPage() {
                       <TableRow className="bg-muted/20 hover:bg-muted/50">
                         <TableCell>
                           <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="w-9 p-0 data-[state=open]:rotate-90">
-                              <ChevronRight className="h-4 w-4" />
+                            <Button variant="ghost" size="sm" className="w-9 p-0">
+                              {openCollapsibles[keluarga.id] ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                               <span className="sr-only">Toggle</span>
                             </Button>
                           </CollapsibleTrigger>
