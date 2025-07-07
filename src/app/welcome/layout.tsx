@@ -84,12 +84,12 @@ export default function DashboardLayout({
         </Sidebar>
       </div>
       <SidebarInset>
-        <header className="sticky top-0 z-40 flex h-14 items-center justify-center bg-black/75 px-4 md:justify-end">
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-center bg-primary px-4 md:justify-end">
             <div className="flex items-center gap-3 md:hidden">
               <Image src="/icons/icon-192x192.png" alt="Logo RW" width={32} height={32} className="rounded-md" />
-              <h1 className="text-lg font-bold text-white">RW CEKATAN</h1>
+              <h1 className="text-lg font-bold text-primary-foreground">RW CEKATAN</h1>
             </div>
-            <p className="hidden font-semibold text-sm text-white md:block">adminrw@naringgul.com</p>
+            <p className="hidden font-semibold text-sm text-primary-foreground md:block">adminrw@naringgul.com</p>
         </header>
         <main className="flex-1 bg-slate-50 p-4 pb-24 md:p-6 lg:p-8">
             {children}
