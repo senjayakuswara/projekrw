@@ -34,7 +34,7 @@ export default function DashboardLayout({
         <Sidebar>
             <SidebarHeader className="p-4">
                 <div className="flex items-center gap-2">
-                    <Image src="/icons/icon-192x192.png" alt="Logo RW" width={40} height={40} className="rounded-full" />
+                    <Image src="/icons/icon-192x192.png?v=2" alt="Logo RW" width={40} height={40} className="rounded-full" />
                     <div className="flex flex-col">
                         <h2 className="text-lg font-semibold">RW CEKATAN</h2>
                         <p className="text-sm text-muted-foreground">Desa Naringgul</p>
@@ -86,7 +86,7 @@ export default function DashboardLayout({
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-14 items-center justify-center bg-primary px-4 md:justify-end">
             <div className="flex items-center gap-3 md:hidden">
-              <Image src="/icons/icon-192x192.png" alt="Logo RW" width={32} height={32} className="rounded-md" />
+              <Image src="/icons/icon-192x192.png?v=2" alt="Logo RW" width={32} height={32} className="rounded-md" />
               <h1 className="text-lg font-bold text-primary-foreground">RW CEKATAN</h1>
             </div>
             <p className="hidden font-semibold text-sm text-primary-foreground md:block">adminrw@naringgul.com</p>
