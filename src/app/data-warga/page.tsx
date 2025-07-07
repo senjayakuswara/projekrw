@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, query, where, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import Papa from "papaparse";
+import * as XLSX from "xlsx";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Plus, Minus, Upload, Download, FileText } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Plus, Minus, Upload, Download, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -274,7 +274,7 @@ export default function DataWargaPage() {
       const keluargaQuery = query(collection(db, "keluarga"));
       const keluargaSnapshot = await getDocs(keluargaQuery);
       
-      const flatData = [];
+      const flatData: any[] = [];
 
       for (const keluargaDoc of keluargaSnapshot.docs) {
         const keluargaData = keluargaDoc.data() as Omit<Keluarga, 'id' | 'anggota'>;
@@ -282,7 +282,7 @@ export default function DataWargaPage() {
         const anggotaSnapshot = await getDocs(anggotaColRef);
 
         if (anggotaSnapshot.empty) {
-            // Handle case where family has no members, maybe export family data only
+            // Handle case where family has no members
         } else {
             for (const anggotaDoc of anggotaSnapshot.docs) {
                 const anggotaData = anggotaDoc.data() as Omit<Anggota, 'id'>;
@@ -295,16 +295,12 @@ export default function DataWargaPage() {
         }
       }
 
-      const csv = Papa.unparse(flatData);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `data_warga_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({ title: "Berhasil!", description: "Data warga telah diekspor." });
+      const worksheet = XLSX.utils.json_to_sheet(flatData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Data Warga");
+      XLSX.writeFile(workbook, `data_warga_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      toast({ title: "Berhasil!", description: "Data warga telah diekspor ke file Excel." });
     } catch (error) {
       console.error("Error exporting data:", error);
       toast({ variant: "destructive", title: "Gagal Mengekspor", description: "Terjadi kesalahan saat mengekspor data." });
@@ -317,103 +313,102 @@ export default function DataWargaPage() {
       "agama", "pendidikan", "jenisPekerjaan", "statusPerkawinan", 
       "statusHubungan", "kewarganegaraan", "namaAyah", "namaIbu"
     ];
-    const csv = Papa.unparse([headers]);
-    // a little trick to have only headers
-    const csvWithOnlyHeaders = csv.substring(0, csv.indexOf('\r\n'));
-    const blob = new Blob([csvWithOnlyHeaders], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "template_import_warga.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+    XLSX.writeFile(workbook, "template_import_warga.xlsx");
   };
-
+  
   const handleImportData = async () => {
     if (!importFile) {
-        toast({ variant: "destructive", title: "Tidak ada file", description: "Silakan pilih file CSV untuk diimpor." });
+        toast({ variant: "destructive", title: "Tidak ada file", description: "Silakan pilih file Excel untuk diimpor." });
         return;
     }
     setIsImporting(true);
     toast({ title: "Mengimpor data...", description: "Proses ini mungkin memakan waktu beberapa saat." });
 
-    Papa.parse(importFile, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-            const data = results.data as any[];
-            if (!data.length) {
-                toast({ variant: "destructive", title: "File Kosong", description: "File CSV yang Anda unggah tidak berisi data." });
-                setIsImporting(false);
-                return;
-            }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
-            try {
-                const batch = writeBatch(db);
-                const families: Record<string, { alamat: string, kepalaKeluarga: string, anggota: any[] }> = {};
-
-                // Group data by noKK
-                for (const row of data) {
-                    const validation = anggotaSchema.merge(z.object({ noKK: z.string(), alamat: z.string() })).safeParse(row);
-                    if (!validation.success) {
-                       console.warn("Skipping invalid row:", row, validation.error.flatten().fieldErrors);
-                       continue; // Skip invalid rows
-                    }
-                    const { noKK, alamat, statusHubungan, nama } = validation.data;
-                    if (!families[noKK]) {
-                        families[noKK] = { alamat, kepalaKeluarga: '', anggota: [] };
-                    }
-                    families[noKK].anggota.push(validation.data);
-                    if (statusHubungan === 'Kepala Keluarga') {
-                        families[noKK].kepalaKeluarga = nama;
-                    }
-                }
-
-                // Process each family
-                for (const noKK in families) {
-                    const family = families[noKK];
-                    if (!family.kepalaKeluarga) {
-                        console.warn(`Skipping family ${noKK}: Kepala Keluarga not found.`);
-                        continue;
-                    }
-                    
-                    const q = query(collection(db, "keluarga"), where("noKK", "==", noKK));
-                    const existingFamilySnap = await getDocs(q);
-                    
-                    let keluargaId: string;
-                    if (existingFamilySnap.empty) {
-                        const newKeluargaRef = doc(collection(db, "keluarga"));
-                        batch.set(newKeluargaRef, { noKK, alamat: family.alamat, kepalaKeluarga: family.kepalaKeluarga });
-                        keluargaId = newKeluargaRef.id;
-                    } else {
-                        keluargaId = existingFamilySnap.docs[0].id;
-                    }
-
-                    for (const member of family.anggota) {
-                        const { noKK: _noKK, alamat: _alamat, ...anggotaData } = member;
-                        const newAnggotaRef = doc(collection(db, "keluarga", keluargaId, "anggota"));
-                        batch.set(newAnggotaRef, anggotaData);
-                    }
-                }
-
-                await batch.commit();
-                toast({ title: "Berhasil!", description: `Data warga berhasil diimpor.` });
-                setImportDialogOpen(false);
-                setImportFile(null);
-            } catch (error) {
-                console.error("Error importing data:", error);
-                toast({ variant: "destructive", title: "Gagal Mengimpor", description: "Terjadi kesalahan. Periksa konsol untuk detail." });
-            } finally {
-                setIsImporting(false);
-            }
-        },
-        error: (error) => {
-            toast({ variant: "destructive", title: "Gagal Membaca File", description: error.message });
-            setIsImporting(false);
+        if (!jsonData.length) {
+          toast({ variant: "destructive", title: "File Kosong", description: "File Excel yang Anda unggah tidak berisi data." });
+          setIsImporting(false);
+          return;
         }
-    });
+
+        const batch = writeBatch(db);
+        const families: Record<string, { alamat: string, kepalaKeluarga: string, anggota: any[] }> = {};
+
+        // Group data by noKK
+        for (const row of jsonData) {
+            const validation = anggotaSchema.merge(z.object({ noKK: z.string(), alamat: z.string() })).safeParse(row);
+            if (!validation.success) {
+               console.warn("Skipping invalid row:", row, validation.error.flatten().fieldErrors);
+               continue; // Skip invalid rows
+            }
+            const { noKK, alamat, statusHubungan, nama } = validation.data;
+            if (!families[noKK]) {
+                families[noKK] = { alamat, kepalaKeluarga: '', anggota: [] };
+            }
+            families[noKK].anggota.push(validation.data);
+            if (statusHubungan === 'Kepala Keluarga') {
+                families[noKK].kepalaKeluarga = nama;
+            }
+        }
+
+        // Process each family
+        for (const noKK in families) {
+            const family = families[noKK];
+            if (!family.kepalaKeluarga) {
+                console.warn(`Skipping family ${noKK}: Kepala Keluarga not found.`);
+                continue;
+            }
+            
+            const q = query(collection(db, "keluarga"), where("noKK", "==", noKK));
+            const existingFamilySnap = await getDocs(q);
+            
+            let keluargaId: string;
+            if (existingFamilySnap.empty) {
+                const newKeluargaRef = doc(collection(db, "keluarga"));
+                batch.set(newKeluargaRef, { noKK, alamat: family.alamat, kepalaKeluarga: family.kepalaKeluarga });
+                keluargaId = newKeluargaRef.id;
+            } else {
+                keluargaId = existingFamilySnap.docs[0].id;
+                // Optional: Update existing family data if needed
+                // batch.update(existingFamilySnap.docs[0].ref, { alamat: family.alamat, kepalaKeluarga: family.kepalaKeluarga });
+            }
+
+            for (const member of family.anggota) {
+                const { noKK: _noKK, alamat: _alamat, ...anggotaData } = member;
+                const newAnggotaRef = doc(collection(db, "keluarga", keluargaId, "anggota"));
+                batch.set(newAnggotaRef, anggotaData);
+            }
+        }
+
+        await batch.commit();
+        toast({ title: "Berhasil!", description: `Data warga berhasil diimpor.` });
+        setImportDialogOpen(false);
+        setImportFile(null);
+      } catch (error) {
+        console.error("Error importing data:", error);
+        toast({ variant: "destructive", title: "Gagal Mengimpor", description: "Terjadi kesalahan. Pastikan format file benar." });
+      } finally {
+        setIsImporting(false);
+      }
+    };
+    reader.onerror = () => {
+      toast({ variant: "destructive", title: "Gagal Membaca File", description: "Tidak dapat membaca file yang dipilih." });
+      setIsImporting(false);
+    };
+    reader.readAsArrayBuffer(importFile);
   };
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -768,22 +763,22 @@ export default function DataWargaPage() {
           <DialogHeader>
             <DialogTitle>Import Data Warga</DialogTitle>
             <DialogDescription>
-              Unggah file CSV untuk menambahkan data warga secara massal. Pastikan format file sesuai dengan template.
+              Unggah file Excel untuk menambahkan data warga secara massal. Pastikan format file sesuai dengan template.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="csv-file">File CSV</Label>
+              <Label htmlFor="excel-file">File Excel</Label>
               <Input 
-                id="csv-file" 
+                id="excel-file" 
                 type="file" 
-                accept=".csv"
+                accept=".xlsx, .xls"
                 ref={importFileRef}
                 onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)}
               />
             </div>
             <Button variant="link" size="sm" className="p-0 justify-start h-auto" onClick={handleDownloadTemplate}>
-              <FileText className="mr-2 h-4 w-4" /> Unduh Template CSV
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Unduh Template Excel
             </Button>
           </div>
           <DialogFooter>
