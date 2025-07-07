@@ -2,10 +2,6 @@
   "name": "RW CEKATAN",
   "short_name": "RW CEKATAN",
   "description": "Aplikasi manajemen untuk lingkungan RW.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#F5F5F5",
-  "theme_color": "#3F51B5",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -13,9 +9,14 @@
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/icon-512x512aplikasi.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "theme_color": "#3F51B5",
+  "background_color": "#ffffff",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
 }
