@@ -225,13 +225,15 @@ export default function DataWargaPage() {
                 <TableHead className="text-right w-[150px]">Aksi</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></TableCell></TableRow>
+                <TableBody>
+                  <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></TableCell></TableRow>
+                </TableBody>
               ) : keluargaList.length > 0 ? (
                 keluargaList.map((keluarga) => (
                   <Collapsible asChild key={keluarga.id} open={openCollapsibles[keluarga.id] || false} onOpenChange={() => toggleCollapsible(keluarga.id)}>
-                    <>
+                    <TableBody>
                       <TableRow className="bg-muted/20 hover:bg-muted/50">
                         <TableCell>
                           <CollapsibleTrigger asChild>
@@ -364,13 +366,14 @@ export default function DataWargaPage() {
                             </TableCell>
                         </tr>
                       </CollapsibleContent>
-                    </>
+                    </TableBody>
                   </Collapsible>
                 ))
               ) : (
-                <TableRow><TableCell colSpan={6} className="h-24 text-center">Belum ada data keluarga. Silakan tambahkan data baru.</TableCell></TableRow>
+                <TableBody>
+                  <TableRow><TableCell colSpan={6} className="h-24 text-center">Belum ada data keluarga. Silakan tambahkan data baru.</TableCell></TableRow>
+                </TableBody>
               )}
-            </TableBody>
           </Table>
         </div>
       </Card>
@@ -481,5 +484,3 @@ export default function DataWargaPage() {
     </div>
   );
 }
-
-    
