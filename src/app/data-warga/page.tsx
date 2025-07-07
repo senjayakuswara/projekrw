@@ -615,17 +615,24 @@ export default function DataWargaPage() {
                                                     </AlertDialog>
                                                 </CardHeader>
                                                 <CardContent className="p-4 pt-2 text-xs flex-grow">
-                                                  <div className="grid grid-cols-[max-content,1fr] gap-x-4 gap-y-1">
-                                                      <span className="text-muted-foreground">NIK</span><span className="text-foreground font-medium text-right">{anggota.nik}</span>
-                                                      <span className="text-muted-foreground">J. Kelamin</span><span className="text-foreground font-medium text-right">{anggota.jenisKelamin}</span>
-                                                      <span className="text-muted-foreground">Lahir</span><span className="text-foreground font-medium text-right truncate">{`${anggota.tempatLahir}, ${anggota.tanggalLahir}`}</span>
-                                                      <span className="text-muted-foreground">Agama</span><span className="text-foreground font-medium text-right">{anggota.agama}</span>
-                                                      <span className="text-muted-foreground">Pendidikan</span><span className="text-foreground font-medium text-right">{anggota.pendidikan}</span>
-                                                      <span className="text-muted-foreground">Pekerjaan</span><span className="text-foreground font-medium text-right">{anggota.jenisPekerjaan}</span>
-                                                      <span className="text-muted-foreground">Perkawinan</span><span className="text-foreground font-medium text-right">{anggota.statusPerkawinan}</span>
-                                                      <span className="text-muted-foreground">Warga Negara</span><span className="text-foreground font-medium text-right">{anggota.kewarganegaraan}</span>
-                                                      <span className="text-muted-foreground">Nama Ayah</span><span className="text-foreground font-medium text-right">{anggota.namaAyah}</span>
-                                                      <span className="text-muted-foreground">Nama Ibu</span><span className="text-foreground font-medium text-right">{anggota.namaIbu}</span>
+                                                  <div className="space-y-1.5">
+                                                    {[
+                                                      { label: "NIK", value: anggota.nik },
+                                                      { label: "J. Kelamin", value: anggota.jenisKelamin },
+                                                      { label: "Lahir", value: `${anggota.tempatLahir}, ${anggota.tanggalLahir ? new Date(anggota.tanggalLahir).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}` },
+                                                      { label: "Agama", value: anggota.agama },
+                                                      { label: "Pendidikan", value: anggota.pendidikan },
+                                                      { label: "Pekerjaan", value: anggota.jenisPekerjaan },
+                                                      { label: "Status Kawin", value: anggota.statusPerkawinan },
+                                                      { label: "Warga Negara", value: anggota.kewarganegaraan },
+                                                      { label: "Nama Ayah", value: anggota.namaAyah },
+                                                      { label: "Nama Ibu", value: anggota.namaIbu },
+                                                    ].map((item, index) => (
+                                                      <div key={index} className="flex justify-between items-start gap-4">
+                                                        <span className="text-muted-foreground">{item.label}</span>
+                                                        <span className="font-medium text-right text-foreground">{item.value || '-'}</span>
+                                                      </div>
+                                                    ))}
                                                   </div>
                                                 </CardContent>
                                             </Card>
