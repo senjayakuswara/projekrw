@@ -1,8 +1,8 @@
 {
   "name": "RW CEKATAN",
-  "short_name": "RW Cekatan",
-  "description": "Aplikasi untuk manajemen administrasi lingkungan RW.",
-  "start_url": "/welcome",
+  "short_name": "RW CEKATAN",
+  "description": "Aplikasi manajemen untuk lingkungan RW.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#F5F5F5",
   "theme_color": "#3F51B5",
