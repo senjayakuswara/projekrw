@@ -9,16 +9,15 @@ import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, writeBatch, 
 import { db } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -47,16 +46,22 @@ export default function DataKeluargaPage() {
   // State for Forms and Dialogs
   const [isKeluargaFormOpen, setKeluargaFormOpen] = useState(false);
   const [editingKeluarga, setEditingKeluarga] = useState<Keluarga | null>(null);
+  
+  const [isAnggotaListOpen, setAnggotaListOpen] = useState(false);
+  const [selectedKeluarga, setSelectedKeluarga] = useState<Keluarga | null>(null);
+  
   const [isAnggotaFormOpen, setAnggotaFormOpen] = useState(false);
   const [editingAnggota, setEditingAnggota] = useState<Anggota | null>(null);
   const [currentKeluargaId, setCurrentKeluargaId] = useState<string | null>(null);
 
   const keluargaForm = useForm<z.infer<typeof keluargaSchema>>({
     resolver: zodResolver(keluargaSchema),
+    defaultValues: { noKK: "", kepalaKeluarga: "", alamat: "" }
   });
 
   const anggotaForm = useForm<z.infer<typeof anggotaSchema>>({
     resolver: zodResolver(anggotaSchema),
+    defaultValues: { nama: "", nik: "", statusHubungan: "Anak" }
   });
 
   // Fetch Keluarga Data
@@ -98,7 +103,6 @@ export default function DataKeluargaPage() {
         await updateDoc(doc(db, "keluarga", editingKeluarga.id), values);
         toast({ title: "Berhasil", description: "Data keluarga berhasil diperbarui." });
       } else {
-        await addDoc(collection(db, "warga"), values); // legacy collection, should be "keluarga"
         await addDoc(collection(db, "keluarga"), values);
         toast({ title: "Berhasil", description: "Keluarga baru berhasil ditambahkan." });
       }
@@ -125,6 +129,12 @@ export default function DataKeluargaPage() {
   };
 
   // Handlers for Anggota
+  const handleKelolaAnggota = (keluarga: Keluarga) => {
+    fetchAnggota(keluarga.id); 
+    setSelectedKeluarga(keluarga);
+    setAnggotaListOpen(true);
+  };
+
   const handleAnggotaDialogOpen = (keluargaId: string, anggota: Anggota | null = null) => {
     setCurrentKeluargaId(keluargaId);
     setEditingAnggota(anggota);
@@ -159,6 +169,8 @@ export default function DataKeluargaPage() {
       toast({ variant: "destructive", title: "Gagal", description: "Terjadi kesalahan saat menghapus data." });
     }
   };
+  
+  const keluargaToDisplay = selectedKeluarga ? keluargaList.find(k => k.id === selectedKeluarga.id) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -173,144 +185,83 @@ export default function DataKeluargaPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Keluarga</CardTitle>
-          <CardDescription>Klik pada setiap keluarga untuk melihat dan mengelola anggota keluarganya.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-             <div className="flex justify-center items-center h-24">
+        {loading ? (
+            <div className="flex justify-center items-center h-48">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-             </div>
-          ) : keluargaList.length > 0 ? (
-            <Accordion type="single" collapsible className="w-full" onValueChange={id => id && fetchAnggota(id)}>
-              {keluargaList.map((keluarga) => (
-                <AccordionItem value={keluarga.id} key={keluarga.id}>
-                  <AccordionTrigger className="hover:bg-muted/50 px-4 rounded-md">
-                    <div className="flex justify-between items-center w-full">
-                        <div className="text-left">
-                            <p className="font-semibold text-primary">{keluarga.kepalaKeluarga}</p>
-                            <p className="text-sm text-muted-foreground">No. KK: {keluarga.noKK}</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Badge variant="outline"> {keluarga.anggota?.length || 0} Anggota</Badge>
-                            <AlertDialog>
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button asChild variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                                      <span>
-                                        <span className="sr-only">Buka menu</span>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Aksi Keluarga</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleKeluargaDialogOpen(keluarga)}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        <span>Edit Keluarga</span>
-                                    </DropdownMenuItem>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            <span>Hapus Keluarga</span>
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
-                                <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Hapus Keluarga?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                    Tindakan ini akan menghapus data keluarga <span className="font-semibold">{keluarga.kepalaKeluarga}</span> beserta seluruh anggotanya secara permanen.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteKeluarga(keluarga.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Ya, Hapus
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
+            </div>
+        ) : keluargaList.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {keluargaList.map((keluarga) => (
+                <Card key={keluarga.id} className="flex flex-col">
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle className="text-xl">{keluarga.kepalaKeluarga}</CardTitle>
+                        <CardDescription>No. KK: {keluarga.noKK}</CardDescription>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="bg-slate-50 p-4 rounded-b-md">
-                      <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-semibold">Daftar Anggota Keluarga</h4>
-                          <Button variant="outline" size="sm" onClick={() => handleAnggotaDialogOpen(keluarga.id)}>
-                              <Users className="mr-2 h-4 w-4"/>
-                              Tambah Anggota
-                          </Button>
-                      </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nama</TableHead>
-                          <TableHead>NIK</TableHead>
-                          <TableHead>Status Hubungan</TableHead>
-                          <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {keluarga.anggota && keluarga.anggota.length > 0 ? (
-                          keluarga.anggota.map(anggota => (
-                            <TableRow key={anggota.id}>
-                              <TableCell className="font-medium">{anggota.nama}</TableCell>
-                              <TableCell>{anggota.nik}</TableCell>
-                              <TableCell><Badge variant="secondary">{anggota.statusHubungan}</Badge></TableCell>
-                              <TableCell className="text-right">
-                                <AlertDialog>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                        <DropdownMenuLabel>Aksi Anggota</DropdownMenuLabel>
-                                        <DropdownMenuItem onClick={() => handleAnggotaDialogOpen(keluarga.id, anggota)}>
-                                            <Edit className="mr-2 h-4 w-4" /><span>Edit</span>
-                                        </DropdownMenuItem>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                            <Trash2 className="mr-2 h-4 w-4" /><span>Hapus</span>
-                                            </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Yakin ingin menghapus <span className="font-semibold">{anggota.nama}</span> dari keluarga ini?
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteAnggota(keluarga.id, anggota.id)} className="bg-destructive hover:bg-destructive/90">Hapus</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                    </AlertDialog>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow><TableCell colSpan={4} className="text-center h-24">Belum ada anggota keluarga.</TableCell></TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          ) : (
-            <div className="text-center text-muted-foreground h-24 flex items-center justify-center">Belum ada data keluarga. Silakan tambahkan data baru.</div>
-          )}
-        </CardContent>
-      </Card>
+                    <AlertDialog>
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Buka menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Aksi Keluarga</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleKeluargaDialogOpen(keluarga)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Edit Keluarga</span>
+                            </DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Hapus Keluarga</span>
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Hapus Keluarga?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                            Tindakan ini akan menghapus data keluarga <span className="font-semibold">{keluarga.kepalaKeluarga}</span> beserta seluruh anggotanya secara permanen.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteKeluarga(keluarga.id)} className="bg-destructive hover:bg-destructive/90">
+                            Ya, Hapus
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-2">
+                    <div className="flex items-center text-muted-foreground">
+                        <Users className="mr-3 h-4 w-4 flex-shrink-0" />
+                        <span className="text-sm">{(keluarga.anggota?.length || 0) > 0 ? `${keluarga.anggota.length} Anggota Keluarga` : 'Belum ada anggota'}</span>
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                        <Home className="mr-3 h-4 w-4 flex-shrink-0" />
+                        <span className="text-sm truncate">{keluarga.alamat}</span>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button className="w-full" variant="outline" onClick={() => handleKelolaAnggota(keluarga)}>
+                        <Users className="mr-2 h-4 w-4" />
+                        Kelola Anggota
+                    </Button>
+                </CardFooter>
+                </Card>
+            ))}
+            </div>
+        ) : (
+            <div className="text-center text-muted-foreground border-2 border-dashed rounded-lg h-48 flex flex-col items-center justify-center">
+                <p className="mb-2">Belum ada data keluarga.</p>
+                <p>Silakan tambahkan data baru untuk memulai.</p>
+            </div>
+        )}
 
       {/* Dialog for Keluarga Form */}
       <Dialog open={isKeluargaFormOpen} onOpenChange={setKeluargaFormOpen}>
@@ -350,6 +301,88 @@ export default function DataKeluargaPage() {
                 </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog for Anggota List */}
+      <Dialog open={isAnggotaListOpen} onOpenChange={setAnggotaListOpen}>
+        <DialogContent className="sm:max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>Anggota Keluarga: {keluargaToDisplay?.kepalaKeluarga}</DialogTitle>
+                <DialogDescription>
+                    Kelola data anggota untuk keluarga dengan No. KK: {keluargaToDisplay?.noKK}
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <div className="flex justify-end mb-4">
+                    <Button variant="outline" size="sm" onClick={() => keluargaToDisplay && handleAnggotaDialogOpen(keluargaToDisplay.id)}>
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Tambah Anggota
+                    </Button>
+                </div>
+                <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nama</TableHead>
+                          <TableHead>NIK</TableHead>
+                          <TableHead>Status Hubungan</TableHead>
+                          <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {keluargaToDisplay?.anggota && keluargaToDisplay.anggota.length > 0 ? (
+                          keluargaToDisplay.anggota.map(anggota => (
+                            <TableRow key={anggota.id}>
+                              <TableCell className="font-medium">{anggota.nama}</TableCell>
+                              <TableCell>{anggota.nik}</TableCell>
+                              <TableCell><Badge variant="secondary">{anggota.statusHubungan}</Badge></TableCell>
+                              <TableCell className="text-right">
+                                <AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Aksi Anggota</DropdownMenuLabel>
+                                            <DropdownMenuItem onClick={() => keluargaToDisplay && handleAnggotaDialogOpen(keluargaToDisplay.id, anggota)}>
+                                                <Edit className="mr-2 h-4 w-4" /><span>Edit</span>
+                                            </DropdownMenuItem>
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                <Trash2 className="mr-2 h-4 w-4" /><span>Hapus</span>
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Yakin ingin menghapus <span className="font-semibold">{anggota.nama}</span> dari keluarga ini?
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => keluargaToDisplay && handleDeleteAnggota(keluargaToDisplay.id, anggota.id)} className="bg-destructive hover:bg-destructive/90">Hapus</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow><TableCell colSpan={4} className="text-center h-24">Belum ada anggota keluarga.</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                </div>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="secondary">Tutup</Button></DialogClose>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
       
@@ -404,5 +437,3 @@ export default function DataKeluargaPage() {
     </div>
   );
 }
-
-    
