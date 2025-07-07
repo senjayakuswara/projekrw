@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, query, where, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import Papa from "papaparse";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,10 +18,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Plus, Minus } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Plus, Minus, Upload, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
 
 // Schemas
 const anggotaSchema = z.object({
@@ -62,6 +64,11 @@ export default function DataWargaPage() {
   const [currentKeluargaId, setCurrentKeluargaId] = useState<string | null>(null);
   
   const [openCollapsibles, setOpenCollapsibles] = useState<Record<string, boolean>>({});
+
+  const [isImportDialogOpen, setImportDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const keluargaForm = useForm<z.infer<typeof keluargaSchema>>({
     resolver: zodResolver(keluargaSchema),
@@ -150,7 +157,6 @@ export default function DataWargaPage() {
           alamat: keluarga.alamat,
         });
       } else {
-        // Handle old data: pre-fill what we have and let the user complete it
         keluargaForm.reset({
           ...(keluargaForm.formState.defaultValues || {}),
           noKK: keluarga.noKK,
@@ -176,11 +182,9 @@ export default function DataWargaPage() {
         batch.update(keluargaRef, { noKK, alamat, kepalaKeluarga: nama });
 
         if (editingKeluarga.kepalaKeluargaData?.id) {
-          // If head of family member data exists, update it
           const kepalaKeluargaRef = doc(db, "keluarga", editingKeluarga.keluarga.id, "anggota", editingKeluarga.kepalaKeluargaData.id);
           batch.update(kepalaKeluargaRef, { nama, ...anggotaValues });
         } else {
-          // If it doesn't exist, create it (upgrading old data)
           const anggotaData = { nama, ...anggotaValues, statusHubungan: "Kepala Keluarga" };
           const newAnggotaRef = doc(collection(db, "keluarga", editingKeluarga.keluarga.id, "anggota"));
           batch.set(newAnggotaRef, anggotaData);
@@ -264,17 +268,171 @@ export default function DataWargaPage() {
     }
   };
 
+  const handleExportData = async () => {
+    toast({ title: "Mengekspor data...", description: "Mohon tunggu sebentar." });
+    try {
+      const keluargaQuery = query(collection(db, "keluarga"));
+      const keluargaSnapshot = await getDocs(keluargaQuery);
+      
+      const flatData = [];
+
+      for (const keluargaDoc of keluargaSnapshot.docs) {
+        const keluargaData = keluargaDoc.data() as Omit<Keluarga, 'id' | 'anggota'>;
+        const anggotaColRef = collection(db, "keluarga", keluargaDoc.id, "anggota");
+        const anggotaSnapshot = await getDocs(anggotaColRef);
+
+        if (anggotaSnapshot.empty) {
+            // Handle case where family has no members, maybe export family data only
+        } else {
+            for (const anggotaDoc of anggotaSnapshot.docs) {
+                const anggotaData = anggotaDoc.data() as Omit<Anggota, 'id'>;
+                flatData.push({
+                    noKK: keluargaData.noKK,
+                    alamat: keluargaData.alamat,
+                    ...anggotaData
+                });
+            }
+        }
+      }
+
+      const csv = Papa.unparse(flatData);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `data_warga_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "Berhasil!", description: "Data warga telah diekspor." });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast({ variant: "destructive", title: "Gagal Mengekspor", description: "Terjadi kesalahan saat mengekspor data." });
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      "noKK", "alamat", "nama", "nik", "jenisKelamin", "tempatLahir", "tanggalLahir", 
+      "agama", "pendidikan", "jenisPekerjaan", "statusPerkawinan", 
+      "statusHubungan", "kewarganegaraan", "namaAyah", "namaIbu"
+    ];
+    const csv = Papa.unparse([headers]);
+    // a little trick to have only headers
+    const csvWithOnlyHeaders = csv.substring(0, csv.indexOf('\r\n'));
+    const blob = new Blob([csvWithOnlyHeaders], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "template_import_warga.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportData = async () => {
+    if (!importFile) {
+        toast({ variant: "destructive", title: "Tidak ada file", description: "Silakan pilih file CSV untuk diimpor." });
+        return;
+    }
+    setIsImporting(true);
+    toast({ title: "Mengimpor data...", description: "Proses ini mungkin memakan waktu beberapa saat." });
+
+    Papa.parse(importFile, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+            const data = results.data as any[];
+            if (!data.length) {
+                toast({ variant: "destructive", title: "File Kosong", description: "File CSV yang Anda unggah tidak berisi data." });
+                setIsImporting(false);
+                return;
+            }
+
+            try {
+                const batch = writeBatch(db);
+                const families: Record<string, { alamat: string, kepalaKeluarga: string, anggota: any[] }> = {};
+
+                // Group data by noKK
+                for (const row of data) {
+                    const validation = anggotaSchema.merge(z.object({ noKK: z.string(), alamat: z.string() })).safeParse(row);
+                    if (!validation.success) {
+                       console.warn("Skipping invalid row:", row, validation.error.flatten().fieldErrors);
+                       continue; // Skip invalid rows
+                    }
+                    const { noKK, alamat, statusHubungan, nama } = validation.data;
+                    if (!families[noKK]) {
+                        families[noKK] = { alamat, kepalaKeluarga: '', anggota: [] };
+                    }
+                    families[noKK].anggota.push(validation.data);
+                    if (statusHubungan === 'Kepala Keluarga') {
+                        families[noKK].kepalaKeluarga = nama;
+                    }
+                }
+
+                // Process each family
+                for (const noKK in families) {
+                    const family = families[noKK];
+                    if (!family.kepalaKeluarga) {
+                        console.warn(`Skipping family ${noKK}: Kepala Keluarga not found.`);
+                        continue;
+                    }
+                    
+                    const q = query(collection(db, "keluarga"), where("noKK", "==", noKK));
+                    const existingFamilySnap = await getDocs(q);
+                    
+                    let keluargaId: string;
+                    if (existingFamilySnap.empty) {
+                        const newKeluargaRef = doc(collection(db, "keluarga"));
+                        batch.set(newKeluargaRef, { noKK, alamat: family.alamat, kepalaKeluarga: family.kepalaKeluarga });
+                        keluargaId = newKeluargaRef.id;
+                    } else {
+                        keluargaId = existingFamilySnap.docs[0].id;
+                    }
+
+                    for (const member of family.anggota) {
+                        const { noKK: _noKK, alamat: _alamat, ...anggotaData } = member;
+                        const newAnggotaRef = doc(collection(db, "keluarga", keluargaId, "anggota"));
+                        batch.set(newAnggotaRef, anggotaData);
+                    }
+                }
+
+                await batch.commit();
+                toast({ title: "Berhasil!", description: `Data warga berhasil diimpor.` });
+                setImportDialogOpen(false);
+                setImportFile(null);
+            } catch (error) {
+                console.error("Error importing data:", error);
+                toast({ variant: "destructive", title: "Gagal Mengimpor", description: "Terjadi kesalahan. Periksa konsol untuk detail." });
+            } finally {
+                setIsImporting(false);
+            }
+        },
+        error: (error) => {
+            toast({ variant: "destructive", title: "Gagal Membaca File", description: error.message });
+            setIsImporting(false);
+        }
+    });
+  };
+
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Data Warga</h1>
           <p className="text-muted-foreground">Kelola data warga berdasarkan Kartu Keluarga.</p>
         </div>
-        <Button onClick={() => handleKeluargaDialogOpen()}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Tambah Keluarga
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+            <Button onClick={() => setImportDialogOpen(true)} variant="outline">
+                <Upload className="mr-2 h-4 w-4" /> Import
+            </Button>
+            <Button onClick={handleExportData} variant="outline">
+                <Download className="mr-2 h-4 w-4" /> Export
+            </Button>
+            <Button onClick={() => handleKeluargaDialogOpen()}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Tambah Keluarga
+            </Button>
+        </div>
       </div>
 
       <Card>
@@ -601,6 +759,40 @@ export default function DataWargaPage() {
                 </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for Import */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Data Warga</DialogTitle>
+            <DialogDescription>
+              Unggah file CSV untuk menambahkan data warga secara massal. Pastikan format file sesuai dengan template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="csv-file">File CSV</Label>
+              <Input 
+                id="csv-file" 
+                type="file" 
+                accept=".csv"
+                ref={importFileRef}
+                onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)}
+              />
+            </div>
+            <Button variant="link" size="sm" className="p-0 justify-start h-auto" onClick={handleDownloadTemplate}>
+              <FileText className="mr-2 h-4 w-4" /> Unduh Template CSV
+            </Button>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+            <Button onClick={handleImportData} disabled={isImporting || !importFile}>
+                {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Import Data
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
