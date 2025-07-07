@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Plus, Minus, Upload, Download, FileSpreadsheet, Search, Home, User, UserRound } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2, Users, Plus, Minus, Upload, Download, FileSpreadsheet, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -441,13 +441,13 @@ export default function DataWargaPage() {
 
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Data Warga</h1>
           <p className="text-sm text-muted-foreground">Kelola data warga berdasarkan Kartu Keluarga.</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap justify-end">
             <Button onClick={() => setImportDialogOpen(true)} variant="outline" size="sm">
                 <Upload className="mr-2 h-4 w-4" /> Import
             </Button>
@@ -460,43 +460,23 @@ export default function DataWargaPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
-                <CardTitle className="text-xs font-medium">Total Keluarga</CardTitle>
-                <Home className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.totalKK}</div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
-                <CardTitle className="text-xs font-medium">Total Warga</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.totalWarga}</div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
-                <CardTitle className="text-xs font-medium">Laki-laki</CardTitle>
-                <User className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.lakiLaki}</div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
-                <CardTitle className="text-xs font-medium">Perempuan</CardTitle>
-                <UserRound className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.perempuan}</div>
-            </CardContent>
-        </Card>
+      <div className="grid grid-cols-4 gap-2 rounded-lg border p-2">
+          <div className="text-center">
+              <p className="text-xs text-muted-foreground truncate">Total KK</p>
+              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalKK}</p>
+          </div>
+          <div className="text-center">
+              <p className="text-xs text-muted-foreground truncate">Total Warga</p>
+              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalWarga}</p>
+          </div>
+          <div className="text-center">
+              <p className="text-xs text-muted-foreground truncate">Laki-laki</p>
+              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.lakiLaki}</p>
+          </div>
+          <div className="text-center">
+              <p className="text-xs text-muted-foreground truncate">Perempuan</p>
+              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.perempuan}</p>
+          </div>
       </div>
 
       <Card>
