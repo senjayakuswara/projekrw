@@ -11,10 +11,13 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Home, LogOut, Newspaper, Users, Wallet, BarChart4 } from 'lucide-react';
+import { Home, LogOut, Newspaper, Users, Wallet, BarChart4, Loader2 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { BottomNav } from '@/components/ui/bottom-nav';
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function DashboardLayout({
   children,
@@ -23,10 +26,38 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  const handleLogout = () => {
-    router.push('/');
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserEmail(user.email);
+        setLoading(false);
+      } else {
+        router.replace('/');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -89,7 +120,7 @@ export default function DashboardLayout({
               <Image src="/icons/icon-192x192.png?v=2" alt="Logo RW" width={32} height={32} className="rounded-md" />
               <h1 className="text-lg font-bold text-primary-foreground">RW CEKATAN</h1>
             </div>
-            <p className="hidden font-semibold text-sm text-primary-foreground md:block">adminrw@naringgul.com</p>
+            <p className="hidden font-semibold text-sm text-primary-foreground md:block">{userEmail}</p>
         </header>
         <main className="flex-1 bg-slate-50 p-4 pb-24 md:p-6 lg:p-8">
             {children}

@@ -1,33 +1,47 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, Wallet, Newspaper, UserCog, LogOut, BarChart4 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function WelcomePage() {
   const router = useRouter();
   const [username, setUsername] = useState('Admin');
 
   useEffect(() => {
-    const updateUsername = () => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUsername(user.displayName || user.email?.split('@')[0] || 'Admin');
+      }
+    });
+
+    const updateUsernameFromStorage = () => {
       const storedUsername = localStorage.getItem('rw_cekatan_username');
       if (storedUsername) {
         setUsername(storedUsername);
       }
     };
-    updateUsername();
-    window.addEventListener('storage', updateUsername);
-    window.addEventListener('focus', updateUsername);
+    updateUsernameFromStorage();
+    window.addEventListener('storage', updateUsernameFromStorage);
+    window.addEventListener('focus', updateUsernameFromStorage);
+
     return () => {
-      window.removeEventListener('storage', updateUsername);
-      window.removeEventListener('focus', updateUsername);
+      unsubscribe();
+      window.removeEventListener('storage', updateUsernameFromStorage);
+      window.removeEventListener('focus', updateUsernameFromStorage);
     };
   }, []);
 
-  const handleLogout = () => {
-    router.push('/');
+  const handleLogout = async () => {
+     try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const menuItems = [

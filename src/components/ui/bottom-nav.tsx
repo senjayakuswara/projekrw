@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Home, Users, Wallet, BarChart4, MoreHorizontal, LogOut } from 'lucide-react';
@@ -7,6 +6,9 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useEffect, useState } from 'react';
 
 const navItems = [
   { href: '/welcome', label: 'Dashboard', icon: Home },
@@ -18,9 +20,26 @@ const navItems = [
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  const handleLogout = () => {
-    router.push('/');
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserEmail(user.email);
+      } else {
+        setUserEmail(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
@@ -51,7 +70,7 @@ export function BottomNav() {
                     <SheetTitle>Menu Lainnya</SheetTitle>
                 </SheetHeader>
                 <div className="grid gap-4 p-2">
-                    <div className="font-semibold text-sm p-2 rounded-md bg-muted">adminrw@naringgul.com</div>
+                    <div className="font-semibold text-sm p-2 rounded-md bg-muted truncate">{userEmail}</div>
                     <Button onClick={handleLogout} variant="outline" className="w-full justify-start">
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout

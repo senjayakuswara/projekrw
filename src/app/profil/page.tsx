@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -9,69 +8,77 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Separator } from '@/components/ui/separator';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 
 export default function ProfilPage() {
   const { toast } = useToast();
-  const [username, setUsername] = useState('Admin RW');
+  const [user, setUser] = useState<User | null>(null);
+  const [username, setUsername] = useState('');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
+  
   useEffect(() => {
-    const storedUsername = localStorage.getItem('rw_cekatan_username');
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        setUsername(currentUser.displayName || '');
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setIsLoading(true);
 
-    if (newPassword) {
-      if (newPassword !== confirmPassword) {
-        toast({
-          variant: "destructive",
-          title: "Gagal",
-          description: "Password baru dan konfirmasi password tidak cocok.",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      if (newPassword.length < 6) {
-          toast({
-            variant: "destructive",
-            title: "Gagal",
-            description: "Password baru minimal harus 6 karakter.",
-          });
-          setIsLoading(false);
-          return;
-      }
-      
-      if (oldPassword !== 'adminrw123456') {
-          toast({
-              variant: "destructive",
-              title: "Gagal",
-              description: "Password lama salah.",
-          });
-          setIsLoading(false);
-          return;
-      }
-    }
-
-    setTimeout(() => {
+    try {
+      // Update display name if changed
+      if (username !== user.displayName) {
+        await updateProfile(user, { displayName: username });
         localStorage.setItem('rw_cekatan_username', username);
-        toast({
-            title: "Berhasil",
-            description: "Profil berhasil diperbarui. (Simulasi)",
-        });
-        setOldPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+        toast({ title: "Berhasil", description: "Nama pengguna berhasil diperbarui." });
+      }
+
+      // Update password if new password is provided
+      if (newPassword) {
+        if (newPassword !== confirmPassword) {
+          toast({ variant: "destructive", title: "Gagal", description: "Password baru dan konfirmasi tidak cocok." });
+          return;
+        }
+        if (newPassword.length < 6) {
+          toast({ variant: "destructive", title: "Gagal", description: "Password baru minimal harus 6 karakter." });
+          return;
+        }
+        
+        // Re-authenticate user before changing password
+        if (user.email && oldPassword) {
+          const credential = EmailAuthProvider.credential(user.email, oldPassword);
+          await reauthenticateWithCredential(user, credential);
+          await updatePassword(user, newPassword);
+          
+          toast({ title: "Berhasil", description: "Password berhasil diubah." });
+          setOldPassword('');
+          setNewPassword('');
+          setConfirmPassword('');
+        } else {
+           toast({ variant: "destructive", title: "Gagal", description: "Password lama diperlukan untuk mengubah password." });
+        }
+      }
+    } catch (error: any) {
+        console.error("Profile update error:", error);
+        if (error.code === 'auth/wrong-password') {
+            toast({ variant: "destructive", title: "Gagal", description: "Password lama salah." });
+        } else {
+            toast({ variant: "destructive", title: "Gagal", description: "Terjadi kesalahan saat memperbarui profil." });
+        }
+    } finally {
         setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -100,7 +107,7 @@ export default function ProfilPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value="adminrw@naringgul.com" disabled />
+              <Input id="email" type="email" value={user?.email || ''} disabled />
             </div>
           </CardContent>
           
@@ -136,7 +143,8 @@ export default function ProfilPage() {
               <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
               <Input 
                 id="confirmPassword" 
-                type="password" 
+                type="password"
+                required={!!newPassword}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
