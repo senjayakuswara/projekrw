@@ -11,10 +11,26 @@ export default function WelcomePage() {
   const [username, setUsername] = useState('Admin');
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem('rw_cekatan_username');
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
+    // Function to read and update username from localStorage
+    const updateUsername = () => {
+      const storedUsername = localStorage.getItem('rw_cekatan_username');
+      if (storedUsername) {
+        setUsername(storedUsername);
+      }
+    };
+
+    // Update username on initial component mount
+    updateUsername();
+
+    // Add event listeners to update username if it changes in another tab or when the window gets focus
+    window.addEventListener('storage', updateUsername);
+    window.addEventListener('focus', updateUsername);
+
+    // Clean up listeners when the component unmounts
+    return () => {
+      window.removeEventListener('storage', updateUsername);
+      window.removeEventListener('focus', updateUsername);
+    };
   }, []);
 
   const handleLogout = () => {
