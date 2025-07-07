@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Home, LogOut, Newspaper, Users, Wallet } from 'lucide-react';
+import { Home, LogOut, Newspaper, Users, Wallet, BarChart4 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { BottomNav } from '@/components/ui/bottom-nav';
@@ -53,6 +53,12 @@ export default function DashboardLayout({
                 <SidebarMenuButton onClick={() => router.push('/data-warga')} isActive={pathname === '/data-warga'}>
                     <Users />
                     Data Warga
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => router.push('/statistik')} isActive={pathname === '/statistik'}>
+                    <BarChart4 />
+                    Statistik
                 </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Home, Newspaper, Users, Wallet, MoreHorizontal, LogOut } from 'lucide-react';
+import { Home, Users, Wallet, BarChart4, MoreHorizontal, LogOut } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -11,8 +11,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 const navItems = [
   { href: '/welcome', label: 'Dashboard', icon: Home },
   { href: '/data-warga', label: 'Data Warga', icon: Users },
+  { href: '/statistik', label: 'Statistik', icon: BarChart4 },
   { href: '/keuangan', label: 'Keuangan', icon: Wallet },
-  { href: '/pengumuman', label: 'Pengumuman', icon: Newspaper },
 ];
 
 export function BottomNav() {

@@ -23,7 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 
 // Schemas
 const anggotaSchema = z.object({
@@ -113,25 +112,6 @@ export default function DataWargaPage() {
     }
   });
 
-  const stats = useMemo(() => {
-    const totalWarga = keluargaList.reduce((acc, curr) => acc + (curr.anggota?.length || 0), 0);
-    let lakiLaki = 0;
-    let perempuan = 0;
-    keluargaList.forEach(k => {
-      k.anggota?.forEach(a => {
-        if (a.jenisKelamin === 'Laki-laki') lakiLaki++;
-        if (a.jenisKelamin === 'Perempuan') perempuan++;
-      });
-    });
-
-    return {
-      totalKK: keluargaList.length,
-      totalWarga,
-      lakiLaki,
-      perempuan,
-    };
-  }, [keluargaList]);
-
   const filteredKeluargaList = useMemo(() => {
     if (!searchTerm) return keluargaList;
     return keluargaList.filter(keluarga => 
@@ -158,7 +138,7 @@ export default function DataWargaPage() {
     setLoading(true);
     const unsubKeluarga = onSnapshot(collection(db, "keluarga"), (snapshot) => {
       const keluargaData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Keluarga));
-      setKeluargaList(keluargaData);
+      setKeluargaList(keluargaData.sort((a, b) => a.kepalaKeluarga.localeCompare(b.kepalaKeluarga)));
 
       const unsubAnggotaListeners: (() => void)[] = [];
       keluargaData.forEach(keluarga => {
@@ -459,26 +439,7 @@ export default function DataWargaPage() {
             </Button>
         </div>
       </div>
-
-      <div className="grid grid-cols-4 gap-2 rounded-lg border p-2">
-          <div className="text-center">
-              <p className="text-xs text-muted-foreground truncate">Total KK</p>
-              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalKK}</div>
-          </div>
-          <div className="text-center">
-              <p className="text-xs text-muted-foreground truncate">Total Warga</p>
-              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalWarga}</div>
-          </div>
-          <div className="text-center">
-              <p className="text-xs text-muted-foreground truncate">Laki-laki</p>
-              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.lakiLaki}</div>
-          </div>
-          <div className="text-center">
-              <p className="text-xs text-muted-foreground truncate">Perempuan</p>
-              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.perempuan}</div>
-          </div>
-      </div>
-
+      
       <Card>
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>

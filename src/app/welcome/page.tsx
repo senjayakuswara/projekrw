@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, Wallet, Newspaper, UserCog, LogOut } from "lucide-react";
+import { Users, Wallet, Newspaper, UserCog, LogOut, BarChart4 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -11,22 +11,15 @@ export default function WelcomePage() {
   const [username, setUsername] = useState('Admin');
 
   useEffect(() => {
-    // Function to read and update username from localStorage
     const updateUsername = () => {
       const storedUsername = localStorage.getItem('rw_cekatan_username');
       if (storedUsername) {
         setUsername(storedUsername);
       }
     };
-
-    // Update username on initial component mount
     updateUsername();
-
-    // Add event listeners to update username if it changes in another tab or when the window gets focus
     window.addEventListener('storage', updateUsername);
     window.addEventListener('focus', updateUsername);
-
-    // Clean up listeners when the component unmounts
     return () => {
       window.removeEventListener('storage', updateUsername);
       window.removeEventListener('focus', updateUsername);
@@ -44,6 +37,13 @@ export default function WelcomePage() {
       icon: Users,
       href: "/data-warga",
       color: "bg-blue-100 text-blue-600",
+    },
+    {
+      title: "Statistik",
+      description: "Lihat ringkasan data warga",
+      icon: BarChart4,
+      href: "/statistik",
+      color: "bg-indigo-100 text-indigo-600",
     },
     {
       title: "Keuangan",
