@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -7,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Separator } from '@/components/ui/separator';
 
 export default function ProfilPage() {
   const { toast } = useToast();
+  const [username, setUsername] = useState('Admin RW');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,44 +22,50 @@ export default function ProfilPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (newPassword !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Gagal",
-        description: "Password baru dan konfirmasi password tidak cocok.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    if (newPassword.length < 6) {
+    // Logic to change password only if new password fields are filled
+    if (newPassword) {
+      if (newPassword !== confirmPassword) {
         toast({
           variant: "destructive",
           title: "Gagal",
-          description: "Password baru minimal harus 6 karakter.",
+          description: "Password baru dan konfirmasi password tidak cocok.",
         });
         setIsLoading(false);
         return;
+      }
+
+      if (newPassword.length < 6) {
+          toast({
+            variant: "destructive",
+            title: "Gagal",
+            description: "Password baru minimal harus 6 karakter.",
+          });
+          setIsLoading(false);
+          return;
+      }
+      
+      // Simulate checking old password
+      if (oldPassword !== 'adminrw123456') {
+          toast({
+              variant: "destructive",
+              title: "Gagal",
+              description: "Password lama salah.",
+          });
+          setIsLoading(false);
+          return;
+      }
     }
 
-    // Since login is hardcoded, this is just a simulation.
-    // In a real app, you would call an API to change the password.
+    // Simulation of saving data
     setTimeout(() => {
-        if (oldPassword === 'adminrw123456') {
-             toast({
-                title: "Berhasil",
-                description: "Password berhasil diubah. (Simulasi)",
-             });
-             setOldPassword('');
-             setNewPassword('');
-             setConfirmPassword('');
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Gagal",
-                description: "Password lama salah.",
-            });
-        }
+        toast({
+            title: "Berhasil",
+            description: "Profil berhasil diperbarui. (Simulasi)",
+        });
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        // In a real app, you would also save the new username
         setIsLoading(false);
     }, 1000);
   };
@@ -69,25 +78,43 @@ export default function ProfilPage() {
       </div>
 
       <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Ubah Password</CardTitle>
-          <CardDescription>
-            Masukkan password lama dan password baru Anda di bawah ini.
-          </CardDescription>
-        </CardHeader>
         <form onSubmit={handleSubmit}>
+          <CardHeader>
+            <CardTitle>Informasi Akun</CardTitle>
+            <CardDescription>
+              Perbarui nama pengguna Anda. Email tidak dapat diubah.
+            </CardDescription>
+          </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Nama Pengguna</Label>
+              <Input 
+                id="username" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value="adminrw@naringgul.com" disabled />
-              <p className="text-xs text-muted-foreground">Email tidak dapat diubah.</p>
             </div>
+          </CardContent>
+          
+          <Separator className="my-4" />
+
+          <CardHeader>
+            <CardTitle>Ubah Password</CardTitle>
+            <CardDescription>
+                Kosongkan bagian ini jika Anda tidak ingin mengubah password.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="oldPassword">Password Lama</Label>
               <Input 
                 id="oldPassword" 
                 type="password" 
-                required 
+                required={!!newPassword}
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
               />
@@ -97,7 +124,6 @@ export default function ProfilPage() {
               <Input 
                 id="newPassword" 
                 type="password" 
-                required 
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -107,7 +133,6 @@ export default function ProfilPage() {
               <Input 
                 id="confirmPassword" 
                 type="password" 
-                required 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
