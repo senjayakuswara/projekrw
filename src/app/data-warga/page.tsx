@@ -559,90 +559,96 @@ export default function DataWargaPage() {
                       </TableRow>
                       <CollapsibleContent asChild>
                         <tr className="bg-background">
-                            <TableCell colSpan={6} className="p-0">
-                                <div className="p-4 bg-slate-50">
-                                    <h4 className="font-semibold mb-4">Anggota Keluarga:</h4>
-                                    {keluarga.anggota && keluarga.anggota.length > 0 ? (
-                                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                        {keluarga.anggota.map((anggota) => (
-                                            <Card key={anggota.id} className="bg-white shadow-sm flex flex-col">
-                                                <CardHeader className="flex flex-row items-start justify-between p-4 pb-2">
-                                                    <div>
-                                                    <CardTitle className="text-base font-semibold">{anggota.nama}</CardTitle>
-                                                    <CardDescription className="pt-1">
-                                                        <Badge variant={anggota.statusHubungan === 'Kepala Keluarga' ? 'default' : 'outline'}>{anggota.statusHubungan}</Badge>
-                                                    </CardDescription>
-                                                    </div>
-                                                    <AlertDialog>
-                                                        <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0" disabled={anggota.statusHubungan === 'Kepala Keluarga'}>
-                                                            <span className="sr-only">Buka menu</span>
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>Aksi Anggota</DropdownMenuLabel>
-                                                            <DropdownMenuItem onClick={() => handleAnggotaDialogOpen(keluarga.id, anggota)}>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Edit</span>
-                                                            </DropdownMenuItem>
-                                                            <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                <span>Hapus</span>
-                                                            </DropdownMenuItem>
-                                                            </AlertDialogTrigger>
-                                                        </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                        <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                            Yakin ingin menghapus <span className="font-semibold">{anggota.nama}</span> dari keluarga ini?
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                                                            <AlertDialogAction
-                                                            onClick={() => handleDeleteAnggota(keluarga.id, anggota.id)}
-                                                            className="bg-destructive hover:bg-destructive/90"
-                                                            >
-                                                            Hapus
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </CardHeader>
-                                                <CardContent className="p-4 pt-2 text-xs flex-grow">
-                                                  <div className="space-y-1.5">
-                                                    {[
-                                                      { label: "NIK", value: anggota.nik },
-                                                      { label: "J. Kelamin", value: anggota.jenisKelamin },
-                                                      { label: "Lahir", value: `${anggota.tempatLahir}, ${anggota.tanggalLahir ? new Date(anggota.tanggalLahir).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}` },
-                                                      { label: "Agama", value: anggota.agama },
-                                                      { label: "Pendidikan", value: anggota.pendidikan },
-                                                      { label: "Pekerjaan", value: anggota.jenisPekerjaan },
-                                                      { label: "Status Kawin", value: anggota.statusPerkawinan },
-                                                      { label: "Warga Negara", value: anggota.kewarganegaraan },
-                                                      { label: "Nama Ayah", value: anggota.namaAyah },
-                                                      { label: "Nama Ibu", value: anggota.namaIbu },
-                                                    ].map((item, index) => (
-                                                      <div key={index} className="grid grid-cols-[auto_1fr] items-start gap-x-4">
-                                                        <span className="text-muted-foreground">{item.label}</span>
-                                                        <span className="font-medium text-right text-foreground break-words">{item.value || '-'}</span>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                        <div className="text-center text-sm text-muted-foreground p-4">Belum ada data anggota untuk keluarga ini.</div>
-                                    )}
+                          <TableCell colSpan={6} className="p-0">
+                            <div className="p-4 bg-slate-50">
+                              <h4 className="font-semibold mb-4">Anggota Keluarga:</h4>
+                              {keluarga.anggota && keluarga.anggota.length > 0 ? (
+                                <div className="overflow-x-auto rounded-md border">
+                                  <Table className="min-w-max">
+                                    <TableHeader>
+                                      <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                        <TableHead className="whitespace-nowrap">Nama Lengkap</TableHead>
+                                        <TableHead className="whitespace-nowrap">Status</TableHead>
+                                        <TableHead className="whitespace-nowrap">NIK</TableHead>
+                                        <TableHead className="whitespace-nowrap">J. Kelamin</TableHead>
+                                        <TableHead className="whitespace-nowrap">TTL</TableHead>
+                                        <TableHead className="whitespace-nowrap">Agama</TableHead>
+                                        <TableHead className="whitespace-nowrap">Pendidikan</TableHead>
+                                        <TableHead className="whitespace-nowrap">Pekerjaan</TableHead>
+                                        <TableHead className="whitespace-nowrap">St. Kawin</TableHead>
+                                        <TableHead className="whitespace-nowrap">Warga Negara</TableHead>
+                                        <TableHead className="whitespace-nowrap">Nama Ayah</TableHead>
+                                        <TableHead className="whitespace-nowrap">Nama Ibu</TableHead>
+                                        <TableHead className="text-right sticky right-0 bg-slate-100 px-4">Aksi</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {keluarga.anggota.map((anggota) => (
+                                        <TableRow key={anggota.id}>
+                                          <TableCell className="font-medium whitespace-nowrap">{anggota.nama}</TableCell>
+                                          <TableCell className="whitespace-nowrap"><Badge variant={anggota.statusHubungan === 'Kepala Keluarga' ? 'default' : 'outline'}>{anggota.statusHubungan}</Badge></TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.nik}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.jenisKelamin}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{`${anggota.tempatLahir}, ${anggota.tanggalLahir ? new Date(anggota.tanggalLahir).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}`}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.agama}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.pendidikan}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.jenisPekerjaan}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.statusPerkawinan}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.kewarganegaraan}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.namaAyah}</TableCell>
+                                          <TableCell className="whitespace-nowrap">{anggota.namaIbu}</TableCell>
+                                          <TableCell className="text-right sticky right-0 bg-slate-50 px-4">
+                                            <AlertDialog>
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0" disabled={anggota.statusHubungan === 'Kepala Keluarga'}>
+                                                    <span className="sr-only">Buka menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Aksi Anggota</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => handleAnggotaDialogOpen(keluarga.id, anggota)}>
+                                                      <Edit className="mr-2 h-4 w-4" />
+                                                      <span>Edit</span>
+                                                    </DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild>
+                                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                          <Trash2 className="mr-2 h-4 w-4" />
+                                                          <span>Hapus</span>
+                                                      </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                    Yakin ingin menghapus <span className="font-semibold">{anggota.nama}</span> dari keluarga ini?
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                      onClick={() => handleDeleteAnggota(keluarga.id, anggota.id)}
+                                                      className="bg-destructive hover:bg-destructive/90"
+                                                    >
+                                                      Hapus
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
                                 </div>
-                            </TableCell>
+                              ) : (
+                                  <div className="text-center text-sm text-muted-foreground p-4">Belum ada data anggota untuk keluarga ini.</div>
+                              )}
+                            </div>
+                          </TableCell>
                         </tr>
                       </CollapsibleContent>
                     </TableBody>
