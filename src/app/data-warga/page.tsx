@@ -444,61 +444,57 @@ export default function DataWargaPage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Data Warga</h1>
-          <p className="text-muted-foreground">Kelola data warga berdasarkan Kartu Keluarga.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Data Warga</h1>
+          <p className="text-sm text-muted-foreground">Kelola data warga berdasarkan Kartu Keluarga.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-            <Button onClick={() => setImportDialogOpen(true)} variant="outline">
+            <Button onClick={() => setImportDialogOpen(true)} variant="outline" size="sm">
                 <Upload className="mr-2 h-4 w-4" /> Import
             </Button>
-            <Button onClick={handleExportData} variant="outline">
+            <Button onClick={handleExportData} variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" /> Export
             </Button>
-            <Button onClick={() => handleKeluargaDialogOpen()}>
+            <Button onClick={() => handleKeluargaDialogOpen()} size="sm">
                 <PlusCircle className="mr-2 h-4 w-4" /> Tambah Keluarga
             </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Keluarga</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                <CardTitle className="text-xs font-medium">Total Keluarga</CardTitle>
                 <Home className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-16"/> : stats.totalKK}</div>
-                <p className="text-xs text-muted-foreground">Jumlah Kartu Keluarga terdaftar</p>
+            <CardContent className="p-3 pt-0">
+                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.totalKK}</div>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Warga</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                <CardTitle className="text-xs font-medium">Total Warga</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-16"/> : stats.totalWarga}</div>
-                <p className="text-xs text-muted-foreground">Jumlah seluruh warga terdaftar</p>
+            <CardContent className="p-3 pt-0">
+                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.totalWarga}</div>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Laki-laki</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                <CardTitle className="text-xs font-medium">Laki-laki</CardTitle>
                 <User className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-16"/> : stats.lakiLaki}</div>
-                <p className="text-xs text-muted-foreground">Jumlah warga laki-laki</p>
+            <CardContent className="p-3 pt-0">
+                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.lakiLaki}</div>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Perempuan</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                <CardTitle className="text-xs font-medium">Perempuan</CardTitle>
                 <UserRound className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-16"/> : stats.perempuan}</div>
-                <p className="text-xs text-muted-foreground">Jumlah warga perempuan</p>
+            <CardContent className="p-3 pt-0">
+                <div className="text-xl font-bold">{loading ? <Skeleton className="h-7 w-12"/> : stats.perempuan}</div>
             </CardContent>
         </Card>
       </div>
