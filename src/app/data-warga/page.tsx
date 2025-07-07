@@ -463,19 +463,19 @@ export default function DataWargaPage() {
       <div className="grid grid-cols-4 gap-2 rounded-lg border p-2">
           <div className="text-center">
               <p className="text-xs text-muted-foreground truncate">Total KK</p>
-              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalKK}</p>
+              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalKK}</div>
           </div>
           <div className="text-center">
               <p className="text-xs text-muted-foreground truncate">Total Warga</p>
-              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalWarga}</p>
+              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.totalWarga}</div>
           </div>
           <div className="text-center">
               <p className="text-xs text-muted-foreground truncate">Laki-laki</p>
-              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.lakiLaki}</p>
+              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.lakiLaki}</div>
           </div>
           <div className="text-center">
               <p className="text-xs text-muted-foreground truncate">Perempuan</p>
-              <p className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.perempuan}</p>
+              <div className="text-base font-bold">{loading ? <Skeleton className="h-5 w-8 mx-auto"/> : stats.perempuan}</div>
           </div>
       </div>
 
