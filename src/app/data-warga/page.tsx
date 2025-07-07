@@ -374,10 +374,14 @@ export default function DataWargaPage() {
                                                         <TableHead className="whitespace-nowrap">NIK</TableHead>
                                                         <TableHead className="whitespace-nowrap">Hubungan</TableHead>
                                                         <TableHead className="whitespace-nowrap">Jenis Kelamin</TableHead>
-                                                        <TableHead className="whitespace-nowrap">Tgl Lahir</TableHead>
+                                                        <TableHead className="whitespace-nowrap">Tempat, Tgl Lahir</TableHead>
+                                                        <TableHead className="whitespace-nowrap">Agama</TableHead>
                                                         <TableHead className="whitespace-nowrap">Pendidikan</TableHead>
                                                         <TableHead className="whitespace-nowrap">Pekerjaan</TableHead>
                                                         <TableHead className="whitespace-nowrap">Status Kawin</TableHead>
+                                                        <TableHead className="whitespace-nowrap">Kewarganegaraan</TableHead>
+                                                        <TableHead className="whitespace-nowrap">Nama Ayah</TableHead>
+                                                        <TableHead className="whitespace-nowrap">Nama Ibu</TableHead>
                                                         <TableHead className="text-right whitespace-nowrap">Aksi</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
@@ -388,10 +392,14 @@ export default function DataWargaPage() {
                                                             <TableCell className="whitespace-nowrap">{anggota.nik}</TableCell>
                                                             <TableCell className="whitespace-nowrap"><Badge variant={anggota.statusHubungan === 'Kepala Keluarga' ? 'default' : 'outline'}>{anggota.statusHubungan}</Badge></TableCell>
                                                             <TableCell className="whitespace-nowrap">{anggota.jenisKelamin}</TableCell>
-                                                            <TableCell className="whitespace-nowrap">{anggota.tanggalLahir}</TableCell>
+                                                            <TableCell className="whitespace-nowrap">{`${anggota.tempatLahir}, ${anggota.tanggalLahir}`}</TableCell>
+                                                            <TableCell className="whitespace-nowrap">{anggota.agama}</TableCell>
                                                             <TableCell className="whitespace-nowrap">{anggota.pendidikan}</TableCell>
                                                             <TableCell className="whitespace-nowrap">{anggota.jenisPekerjaan}</TableCell>
                                                             <TableCell className="whitespace-nowrap">{anggota.statusPerkawinan}</TableCell>
+                                                            <TableCell className="whitespace-nowrap">{anggota.kewarganegaraan}</TableCell>
+                                                            <TableCell className="whitespace-nowrap">{anggota.namaAyah}</TableCell>
+                                                            <TableCell className="whitespace-nowrap">{anggota.namaIbu}</TableCell>
                                                             <TableCell className="text-right">
                                                                 <AlertDialog>
                                                                     <DropdownMenu>
