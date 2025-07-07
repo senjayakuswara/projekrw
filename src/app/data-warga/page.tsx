@@ -412,7 +412,7 @@ export default function DataWargaPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Data Warga</h1>
           <p className="text-muted-foreground">Kelola data warga berdasarkan Kartu Keluarga.</p>
@@ -436,6 +436,7 @@ export default function DataWargaPage() {
           <CardDescription>Klik ikon panah untuk melihat anggota keluarga.</CardDescription>
         </CardHeader>
         <div className="border-t">
+         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -615,6 +616,7 @@ export default function DataWargaPage() {
                 </TableBody>
               )}
           </Table>
+          </div>
         </div>
       </Card>
       
@@ -648,7 +650,7 @@ export default function DataWargaPage() {
                     <FormField control={keluargaForm.control} name="jenisKelamin" render={({ field }) => (
                         <FormItem><FormLabel>Jenis Kelamin</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Laki-laki">Laki-laki</SelectItem><SelectItem value="Perempuan">Perempuan</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                     )} />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={keluargaForm.control} name="tempatLahir" render={({ field }) => (
                             <FormItem><FormLabel>Tempat Lahir</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -674,7 +676,7 @@ export default function DataWargaPage() {
                     <FormField control={keluargaForm.control} name="kewarganegaraan" render={({ field }) => (
                         <FormItem><FormLabel>Kewarganegaraan</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={keluargaForm.control} name="namaAyah" render={({ field }) => (
                             <FormItem><FormLabel>Nama Ayah</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -712,7 +714,7 @@ export default function DataWargaPage() {
                  <FormField control={anggotaForm.control} name="jenisKelamin" render={({ field }) => (
                     <FormItem><FormLabel>Jenis Kelamin</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Laki-laki">Laki-laki</SelectItem><SelectItem value="Perempuan">Perempuan</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={anggotaForm.control} name="tempatLahir" render={({ field }) => (
                         <FormItem><FormLabel>Tempat Lahir</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
@@ -738,7 +740,7 @@ export default function DataWargaPage() {
                 <FormField control={anggotaForm.control} name="kewarganegaraan" render={({ field }) => (
                     <FormItem><FormLabel>Kewarganegaraan</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={anggotaForm.control} name="namaAyah" render={({ field }) => (
                         <FormItem><FormLabel>Nama Ayah</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
