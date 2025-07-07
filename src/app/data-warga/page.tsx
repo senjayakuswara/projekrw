@@ -5,8 +5,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { onAuthStateChanged } from 'firebase/auth';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, query, where, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import * as XLSX from "xlsx";
 
 import { Button } from "@/components/ui/button";
@@ -124,37 +125,58 @@ export default function DataWargaPage() {
     setOpenCollapsibles(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const fetchAnggota = useCallback((keluargaId: string) => {
-     const anggotaColRef = collection(db, "keluarga", keluargaId, "anggota");
-     return onSnapshot(anggotaColRef, (snapshot) => {
-         const anggotaData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Anggota));
-         setKeluargaList(prevList => prevList.map(keluarga => 
-             keluarga.id === keluargaId ? { ...keluarga, anggota: anggotaData.sort((a, b) => a.nama.localeCompare(b.nama)) } : keluarga
-         ));
-     });
-  }, []);
-
   useEffect(() => {
     setLoading(true);
-    const unsubKeluarga = onSnapshot(collection(db, "keluarga"), (snapshot) => {
-      const keluargaData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Keluarga));
-      setKeluargaList(keluargaData.sort((a, b) => a.kepalaKeluarga.localeCompare(b.kepalaKeluarga)));
+    let unsubKeluarga: (() => void) | undefined = undefined;
+    const unsubAnggotaMap: Record<string, () => void> = {};
 
-      const unsubAnggotaListeners: (() => void)[] = [];
-      keluargaData.forEach(keluarga => {
-        const unsub = fetchAnggota(keluarga.id);
-        unsubAnggotaListeners.push(unsub);
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        if (unsubKeluarga) unsubKeluarga();
+        Object.values(unsubAnggotaMap).forEach((unsub) => unsub());
+        setKeluargaList([]);
+        setLoading(false);
+        return;
+      }
+      
+      unsubKeluarga = onSnapshot(collection(db, "keluarga"), (keluargaSnapshot) => {
+        const keluargaData = keluargaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Keluarga));
+
+        const currentKeluargaIds = new Set(keluargaData.map(k => k.id));
+        Object.keys(unsubAnggotaMap).forEach(keluargaId => {
+          if (!currentKeluargaIds.has(keluargaId)) {
+            unsubAnggotaMap[keluargaId]();
+            delete unsubAnggotaMap[keluargaId];
+          }
+        });
+
+        keluargaData.forEach(keluarga => {
+          if (!unsubAnggotaMap[keluarga.id]) {
+            const anggotaColRef = collection(db, "keluarga", keluarga.id, "anggota");
+            unsubAnggotaMap[keluarga.id] = onSnapshot(anggotaColRef, (anggotaSnapshot) => {
+              const anggotaData = anggotaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Anggota));
+              setKeluargaList(prevList => 
+                prevList.map(k => k.id === keluarga.id ? { ...k, anggota: anggotaData.sort((a,b) => a.nama.localeCompare(b.nama)) } : k)
+              );
+            });
+          }
+        });
+
+        setKeluargaList(keluargaData.sort((a, b) => a.kepalaKeluarga.localeCompare(b.kepalaKeluarga)));
+        setLoading(false);
+      }, (error) => {
+        console.error("Error fetching keluarga:", error);
+        toast({ variant: "destructive", title: "Gagal Memuat Data", description: "Tidak dapat mengambil data keluarga. Pastikan Anda telah login." });
+        setLoading(false);
       });
-
-      setLoading(false);
-      return () => unsubAnggotaListeners.forEach(unsub => unsub());
-    }, (error) => {
-      console.error("Error fetching keluarga:", error);
-      toast({ variant: "destructive", title: "Gagal Memuat Data", description: "Tidak dapat mengambil data keluarga." });
-      setLoading(false);
     });
-    return () => unsubKeluarga();
-  }, [toast, fetchAnggota]);
+
+    return () => {
+      authUnsubscribe();
+      if (unsubKeluarga) unsubKeluarga();
+      Object.values(unsubAnggotaMap).forEach((unsub) => unsub());
+    };
+  }, [toast]);
   
   const handleKeluargaDialogOpen = (keluarga: Keluarga | null = null) => {
     if (keluarga) {

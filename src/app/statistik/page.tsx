@@ -3,10 +3,11 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, onSnapshot, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import { onAuthStateChanged } from 'firebase/auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, User, UserRound, Home } from "lucide-react";
+import { Users, User, UserRound, Home, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell } from 'recharts';
 import {
   ChartContainer,
@@ -38,20 +39,33 @@ export default function StatistikPage() {
 
     useEffect(() => {
         setLoading(true);
-        const unsubKeluarga = onSnapshot(collection(db, "keluarga"), async (snapshot) => {
-            const keluargaDataPromises = snapshot.docs.map(async (doc) => {
-                const anggota = await fetchAnggota(doc.id);
-                return { id: doc.id, ...doc.data(), anggota } as Keluarga;
-            });
-            const allKeluargaData = await Promise.all(keluargaDataPromises);
-            setKeluargaList(allKeluargaData);
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching data:", error);
-            setLoading(false);
+        let unsubKeluarga: (() => void) | undefined = undefined;
+
+        const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                unsubKeluarga = onSnapshot(collection(db, "keluarga"), async (snapshot) => {
+                    const keluargaDataPromises = snapshot.docs.map(async (doc) => {
+                        const anggota = await fetchAnggota(doc.id);
+                        return { id: doc.id, ...doc.data(), anggota } as Keluarga;
+                    });
+                    const allKeluargaData = await Promise.all(keluargaDataPromises);
+                    setKeluargaList(allKeluargaData);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching data:", error);
+                    setLoading(false);
+                });
+            } else {
+                if (unsubKeluarga) unsubKeluarga();
+                setKeluargaList([]);
+                setLoading(false);
+            }
         });
 
-        return () => unsubKeluarga();
+        return () => {
+            authUnsubscribe();
+            if (unsubKeluarga) unsubKeluarga();
+        };
     }, [fetchAnggota]);
 
     const stats = useMemo(() => {
@@ -94,6 +108,14 @@ export default function StatistikPage() {
             </CardContent>
         </Card>
     );
+    
+    if (loading) {
+        return (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8">
