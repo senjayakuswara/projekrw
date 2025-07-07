@@ -79,8 +79,9 @@ export default function DashboardLayout({
         </Sidebar>
       </div>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-end border-b bg-background px-4">
-            <p className="font-semibold text-sm">adminrw@naringgul.com</p>
+        <header className="flex h-14 items-center justify-center border-b bg-background px-4 md:justify-end">
+            <h1 className="text-lg font-bold md:hidden">RW CEKATAN</h1>
+            <p className="hidden font-semibold text-sm md:block">adminrw@naringgul.com</p>
         </header>
         <main className="flex-1 overflow-y-auto bg-slate-50 p-4 pb-24 md:p-6 lg:p-8">
             {children}
