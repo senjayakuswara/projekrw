@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Home, LogOut, Newspaper, Users, Wallet } from 'lucide-react';
@@ -37,7 +36,7 @@ export default function DashboardLayout({
                 <div className="flex items-center gap-2">
                     <Image src="https://placehold.co/40x40.png" alt="Logo RW" width={40} height={40} className="rounded-full" data-ai-hint="logo building" />
                     <div className="flex flex-col">
-                        <h2 className="text-lg font-semibold">Aplikasi RW</h2>
+                        <h2 className="text-lg font-semibold">RW CEKATAN</h2>
                         <p className="text-sm text-muted-foreground">Desa Naringgul</p>
                     </div>
                 </div>

@@ -2,131 +2,61 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, Wallet, Calendar, Megaphone } from "lucide-react";
+import { Users, Wallet, Newspaper } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+const menuItems = [
+  {
+    title: "Data Warga",
+    description: "Kelola data kependudukan",
+    icon: Users,
+    href: "/data-warga",
+    color: "bg-blue-100 text-blue-600",
+  },
+  {
+    title: "Keuangan",
+    description: "Catat pemasukan & pengeluaran",
+    icon: Wallet,
+    href: "/keuangan",
+    color: "bg-green-100 text-green-600",
+  },
+  {
+    title: "Pengumuman",
+    description: "Buat & lihat informasi penting",
+    icon: Newspaper,
+    href: "/pengumuman",
+    color: "bg-yellow-100 text-yellow-600",
+  },
+];
 
 export default function WelcomePage() {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Ringkasan informasi aplikasi RW Anda.</p>
+        <p className="text-muted-foreground">Selamat datang di Aplikasi RW CEKATAN.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Warga
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,250</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% dari bulan lalu
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Saldo Kas RW
-            </CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Rp 5.432.100</div>
-            <p className="text-xs text-muted-foreground">
-              +15.5% dari bulan lalu
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Surat Diajukan</CardTitle>
-                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="h-4 w-4 text-muted-foreground" viewBox="0 0 16 16">
-                    <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1zM6 4h4a.5.5 0 0 1 0 1H6a.5.5 0 0 1 0-1m0 2h4a.5.5 0 0 1 0 1H6a.5.5 0 0 1 0-1m0 2h2a.5.5 0 0 1 0 1H6a.5.5 0 0 1 0-1"/>
-                </svg>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        {menuItems.map((item) => (
+          <Card 
+            key={item.href} 
+            className="group cursor-pointer transform transition-transform hover:scale-105 hover:shadow-lg"
+            onClick={() => router.push(item.href)}
+          >
+            <CardHeader className="p-4 items-center text-center">
+              <div className={`p-4 rounded-full ${item.color} mb-3 transition-colors group-hover:bg-primary group-hover:text-primary-foreground`}>
+                <item.icon className="h-8 w-8" />
+              </div>
+              <CardTitle className="text-base font-semibold">{item.title}</CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">5</div>
-                <p className="text-xs text-muted-foreground">Perlu diproses</p>
+            <CardContent className="p-4 pt-0 text-center">
+              <p className="text-xs text-muted-foreground">{item.description}</p>
             </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Kegiatan Aktif
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+2</div>
-            <p className="text-xs text-muted-foreground">
-              Dalam minggu ini
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle>Pengumuman Terbaru</CardTitle>
-            <CardDescription>
-              Informasi penting untuk warga.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <div className="flex items-start gap-4">
-                <div className="bg-primary/10 p-2 rounded-md">
-                    <Megaphone className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                    <p className="font-medium">Kerja Bakti Bulanan</p>
-                    <p className="text-sm text-muted-foreground">Diharapkan kehadiran seluruh warga pada hari Minggu, 28 Juli 2024 pukul 07:00.</p>
-                </div>
-             </div>
-             <div className="flex items-start gap-4">
-                <div className="bg-primary/10 p-2 rounded-md">
-                    <Megaphone className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                    <p className="font-medium">Pembayaran Iuran Keamanan</p>
-                    <p className="text-sm text-muted-foreground">Batas akhir pembayaran iuran keamanan bulan Juli adalah tanggal 31 Juli 2024.</p>
-                </div>
-             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Jadwal Kegiatan</CardTitle>
-             <CardDescription>
-              Kegiatan yang akan datang di lingkungan RW.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <div className="flex items-start gap-4">
-                <div className="bg-accent/10 p-2 rounded-md">
-                    <Calendar className="h-6 w-6 text-accent" />
-                </div>
-                <div>
-                    <p className="font-medium">Posyandu Balita</p>
-                    <p className="text-sm text-muted-foreground">Selasa, 30 Juli 2024 - 09:00 WIB</p>
-                </div>
-             </div>
-             <div className="flex items-start gap-4">
-                 <div className="bg-accent/10 p-2 rounded-md">
-                    <Calendar className="h-6 w-6 text-accent" />
-                </div>
-                <div>
-                    <p className="font-medium">Rapat Karang Taruna</p>
-                    <p className="text-sm text-muted-foreground">Rabu, 31 Juli 2024 - 19:30 WIB</p>
-                </div>
-             </div>
-          </CardContent>
-        </Card>
+          </Card>
+        ))}
       </div>
     </div>
   );
